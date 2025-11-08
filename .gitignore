@@ -199,3 +199,6 @@ cython_debug/
 
 # Proccess ID files
 *.pid
+
+# Ignorar la carpeta interna de DVC
+.dvc/
