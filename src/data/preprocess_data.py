@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from pathlib import Path
+import joblib
 from loguru import logger
 from sklearn.preprocessing import OneHotEncoder, PowerTransformer
 from sklearn.compose import ColumnTransformer
@@ -22,7 +23,7 @@ class DataPreprocessor:
         output_paths : dict
             Rutas de salida para `X_TRAIN`, `X_TEST`, `Y_TRAIN`, `Y_TEST`.
         config : dict
-            Configuración del preprocesamiento (p. ej. `target_columns`, `drop_columns`,
+            Configuración del preprocesamiento (p. ej. `target_columns`, `feature_columns`,
             `encoding`, `test_size`, `random_state`, `target_transform`).
         """
         self.input_path = input_path        # Ruta del dataset limpio
@@ -47,8 +48,39 @@ class DataPreprocessor:
         Separa el DataFrame cargado en variables predictoras (`X`)
         y variables objetivo (`y`), de acuerdo con las columnas definidas en `config`.
         """
-        self.X = self.df.drop(columns=self.config["target_columns"] + self.config["drop_columns"])  # X
-        self.y = self.df[self.config["target_columns"]].copy()                                      # y
+        # Obtener listas de columnas esperadas desde la configuración
+        feature_cols = list(self.config.get("feature_columns", []))
+        target_cols = list(self.config.get("target_columns", []))
+
+        # Comprobar que el DataFrame tenga todas las columnas requeridas
+        missing_features = [c for c in feature_cols if c not in self.df.columns]
+        missing_targets = [c for c in target_cols if c not in self.df.columns]
+        missing = missing_features + missing_targets
+
+        # Comportamiento configurables: si la config incluye allow_missing_columns=True,
+        # permitimos continuar rellenando columnas faltantes con NaN; en caso contrario
+        # mantenemos el comportamiento estricto y levantamos un error.
+        allow_missing = bool(self.config.get("allow_missing_columns", True))
+
+        if len(missing) > 0 and not allow_missing:
+            # No proceder si faltan columnas; lanzar excepción para que el llamador lo gestione
+            raise ValueError(f"Faltan columnas requeridas en el DataFrame: {missing}")
+
+        # Si permitimos columnas faltantes, crear esas columnas con NaN para mantener el orden
+        if len(missing) > 0 and allow_missing:
+            logger.warning(f"Faltan columnas {missing} pero 'allow_missing_columns' está activado: se rellenarán con NaN.")
+            # Añadir columnas faltantes en el DataFrame original antes de seleccionar
+            for col in missing_features:
+                if col not in self.df.columns:
+                    self.df[col] = np.nan
+            for col in missing_targets:
+                if col not in self.df.columns:
+                    self.df[col] = np.nan
+
+        # Seleccionar únicamente las columnas solicitadas (ignorando otras columnas adicionales)
+        # Si faltaban y allow_missing=True, ahora existirán (rellenas con NaN)
+        self.X = self.df[feature_cols].copy()
+        self.y = self.df[target_cols].copy()
 
     def encode_features(self):
         """
@@ -123,6 +155,24 @@ class DataPreprocessor:
         y_test.to_csv(self.output_paths["Y_TEST"], index=False)
         logger.success("Preprocesamiento completado y archivos guardados.")  # Log de éxito
 
+    def save_preprocessor(self, dest: Path | str | None = None):
+        """Guarda el pipeline de preprocesamiento (pipeline) en disco.
+
+        Si `dest` es None, se intentará leer la ruta desde
+        self.config.get('preprocessor_file'). Se usa `paths.ensure_path`
+        para crear la carpeta si es necesario.
+        """
+        if self.pipeline is None:
+            raise RuntimeError("Pipeline no está inicializado. Ejecuta encode_features() y ajusta el pipeline antes de guardar.")
+
+        target = dest or self.config["preprocessor_file"]
+        if target is None:
+            raise ValueError("No se proporcionó ruta para guardar el preprocessor (dest es None y config['preprocessor_file'] no existe).")
+
+        joblib.dump(self.pipeline, target)
+        logger.info(f"Preprocessor serializado guardado en: {target}")
+        return target
+
     def run(self):
         """
         Ejecuta de forma secuencial todo el pipeline de preprocesamiento:
@@ -132,4 +182,11 @@ class DataPreprocessor:
         self.separate_variables()                                                                       # Separación X e y
         self.encode_features()                                                                          # Configuración de codificación
         X_train_proc, X_test_proc, y_train, y_test, train_idx, test_idx = self.split_and_transform()    # División y transformación
-        self.save_outputs(X_train_proc, X_test_proc, y_train, y_test, train_idx, test_idx)              # Guardado de archivos
+        self.save_outputs(X_train_proc, X_test_proc, y_train, y_test, train_idx, test_idx)
+        
+        # Persistir el pipeline de preprocesamiento (opcional pero recomendado)
+        try:
+            self.save_preprocessor()
+        except Exception as e:
+            # No interrumpir el flujo si no se puede guardar el pipeline
+            logger.warning(f"Advertencia: no se pudo guardar el preprocessor serializado: {e}")         # Guardado de archivos

@@ -1,10 +1,10 @@
-# E38_Fase_2
+# E38_Fase_3
 
 <a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
     <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
 </a>
 
-Fase 2 Avance de Proyecto, Gestion del Proyecto de Machine Learning
+Fase 3 Avance de Proyecto, Gestion del Proyecto de Machine Learning
 
 ## Project Organization
 
@@ -166,6 +166,11 @@ Realizar entrenamiento:
 make train
 ```
 
+Ejecuta (data → clean_data → FE → train):
+```bash
+make all
+```
+
 Realizar preducción:
 ```bash
 make predict
@@ -313,3 +318,98 @@ Ejemplo de correlation matrix:
 ```bash
 python -m src.modeling.plots --plot-type correlation --filename corr_matrix.png
 ```
+
+--------
+
+## 🚀 Model serving (FastAPI)
+
+Servicio HTTP para exponer el modelo entrenado.
+
+---
+
+### Endpoints
+
+Se cuenta con `2` endpoints:
+- Examinación de operatividad: `GET /health`
+- Predicción: `POST /predict` (JSON)
+
+#### Endpoint de predicción
+Esquema de entrada (JSON):
+
+{
+  "model_type": "xgb",
+  "instances": [
+    {"X1": 1.0, "X2": 2.0, "X3": 0.5},
+    { ... }
+  ]
+}
+
+Ejemplo de respuesta:
+
+{
+    "predictions": [
+        {"prediction": 0.123},
+        {"prediction": 0.456}
+    ]
+}
+
+### Ejecución del servicio localmente:
+
+```bash
+pip install -r requirements.txt
+# Desde la raíz del proyecto
+# Si tu app está en `src.api.app` o `src.serving.app` ajusta el módulo en consecuencia.
+uvicorn src.api.app:app --host 0.0.0.0 --port 8000 --reload
+```
+
+###  Ejemplo request `curl`:
+
+```bash
+curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" \
+  -d '{"model_type":"xgb","instances":[{"X1":0.98,"X2":514.5,"X3":294.0,"X4":110.25,"X5":7.0,"X6":2.0,"X7":0.0,"X8":0.0}]}'
+```
+
+### Ruta y versión del artefacto del modelo
+
+El proyecto registra modelos en MLflow y también guarda un artefacto local. Se puede referenciar el artefacto usando dos formas:
+
+- Ruta local (archivo): `models/rf_regressor.pkl` (configurado en `params.yaml`, propiedad `training.rf_model_file`).
+- Registro MLflow (Model Registry): `models:/RFRegressor/<version>` (por ejemplo `models:/RFRegressor/1`).
+
+---
+
+## 📦 Contenerizar la API (Docker)
+
+Se provee un `Dockerfile` en la raíz del proyecto para construir una imagen reproducible que incluya el servicio FastAPI y los artefactos del proyecto (incluyendo `models/` si lo deseas copiar dentro de la imagen).
+
+1) Construir la imagen (ejemplo tag semántico):
+
+```bash
+docker build -t ml-service:latest .
+# o versión explícita
+docker build -t cremercado/ml-service:1.0.0 .
+```
+
+2) Ejecutar localmente (mapea puerto 8000):
+
+```bash
+docker run --rm -p 8000:8000 cremercado/ml-service:1.0.0
+```
+
+3) Publicar en Docker Hub (pasos):
+
+```bash
+# 1) Taguear la imagen local con tu repo en Docker Hub
+docker tag ml-service:latest cremercado/ml-service:1.0.0
+
+# 2) Iniciar sesión (te pedirá usuario/contraseña)
+docker login
+
+# 3) Push
+docker push cremercado/ml-service:1.0.0
+```
+
+Tagging / versioning policy recomendada:
+- `cremercado/ml-service:1.0.0`  — versión fijada por release
+- `cremercado/ml-service:latest` — apuntar a la última imagen publicada
+- `cremercado/ml-service:staging` — para despliegues de pre-producción

@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 from scipy.stats import skew
 from loguru import logger
-from pathlib import Path
+from typing import Union, Optional
 
 ## Definimos la CLASE DatasetCleaner
 ## input_path: ruta del archivo CSV de entrada.
@@ -14,16 +14,33 @@ from pathlib import Path
 
 class DatasetCleaner:
     # Inicialización de la clase y definición de parámetros principales
-    def __init__(self, input_path: Path, output_path: Path, skew_threshold: float):
-        self.input_path = input_path            # Ruta del dataset original
-        self.output_path = output_path          # Ruta de salida del dataset limpio
+    def __init__(self, input_path: Union[Path, pd.DataFrame, None], output_path: Optional[Path], skew_threshold: float):
+        """input_path puede ser:
+        - Path: ruta a un CSV que se leerá cuando se llame a load_dataset()
+        - pd.DataFrame: un DataFrame ya cargado (se usará directamente)
+        - None: permite crear el objeto y asignar `df` manualmente antes de ejecutar los pasos
+
+        output_path puede ser None si se quiere trabajar en memoria y no guardar el CSV.
+        """
+        self.input_path = input_path            # Ruta del dataset original o DataFrame
+        self.output_path = output_path          # Ruta de salida del dataset limpio (o None)
         self.skew_threshold = skew_threshold    # Umbral de asimetría para decidir método de imputación
         self.df = None                          # DataFrame que contendrá los datos cargados
+        self._from_dataframe = isinstance(input_path, pd.DataFrame)
 
     # Carga del dataset original
     def load_dataset(self):
         logger.info(f"Cargando dataset original desde: {self.input_path}")  # Log informativo de carga
-        self.df = pd.read_csv(self.input_path)                              # Lectura del archivo CSV
+        # Si el input fue provisto como DataFrame, simplemente usarlo
+        if isinstance(self.input_path, pd.DataFrame):
+            self.df = self.input_path.copy()
+            logger.debug("Dataset cargado desde DataFrame en memoria")
+            return
+
+        if self.input_path is None:
+            raise ValueError("input_path es None: debe proporcionar una ruta o un DataFrame antes de llamar a load_dataset().")
+
+        self.df = pd.read_csv(self.input_path)                              # Lectura CSV desde disco
 
     # Reemplazo de cadenas vacías por valores nulos
     def replace_empty_strings(self):
@@ -47,13 +64,18 @@ class DatasetCleaner:
 
     # Guardado del dataset limpio
     def save_cleaned_dataset(self):
+        if self.output_path is None:
+            logger.warning("output_path es None: no se guardará el dataset en disco; se devolverá el DataFrame en memoria.")
+            return self.df
+
         logger.success(f"Guardando dataset limpio en: {self.output_path}")  # Log de guardado exitoso
         self.df.to_csv(self.output_path, index=False)                       # Exporta el DataFrame limpio a CSV
+        return self.df
 
     # Ejecución completa del proceso de limpieza
     def run(self):
-        self.load_dataset()             # Carga los datos
+        self.load_dataset()             # Carga los datos (desde Path o DataFrame)
         self.replace_empty_strings()    # Limpia strings vacíos
         self.convert_to_numeric()       # Convierte a numérico
         self.impute_missing_values()    # Imputa valores faltantes
-        self.save_cleaned_dataset()     # Guarda el dataset limpio
+        return self.save_cleaned_dataset()     # Guarda el dataset limpio (o devuelve DataFrame si output_path es None)

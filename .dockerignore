@@ -1,0 +1,26 @@
+# Ignorar archivos innecesarios para el contexto del build
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+dist
+build
+venv/
+env/
+ENV/
+/.env
+*.log
+*.sqlite
+
+# Datos, notebooks y documentación pesada (no necesarios en runtime)
+data/
+notebooks/
+docs/
+reports/
+
+# DVC cache y otros artefactos locales
+.dvc/
+.cache/

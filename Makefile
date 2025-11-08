@@ -161,6 +161,10 @@ train:
 .PHONY: prepare
 prepare: data clean_data FE
 
+## Make que ejecuta data → clean_data → FE → train
+.PHONY: all
+all: prepare train
+
 ## Make predict
 .PHONY: predict
 predict:

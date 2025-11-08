@@ -20,12 +20,12 @@ data:
   prediction_file: "${paths.prediction}/predictions.csv"
 
 dvc:
-  gdrive_remote_url: "${oc.env:GDRIVE_REMOTE_URL}"
-  gdrive_client_id: "${oc.env:GDRIVE_CLIENT_ID}"
-  gdrive_client_secret: "${oc.env:GDRIVE_CLIENT_SECRET}"
-  aws_remote_url: "${oc.env:AWS_REMOTE_URL}"
-  aws_region: "${oc.env:AWS_REGION}"
-  aws_profile: "${oc.env:AWS_PROFILE}"
+  gdrive_remote_url: "${oc.env:GDRIVE_REMOTE_URL, ''}"
+  gdrive_client_id: "${oc.env:GDRIVE_CLIENT_ID, ''}"
+  gdrive_client_secret: "${oc.env:GDRIVE_CLIENT_SECRET, ''}"
+  aws_remote_url: "${oc.env:AWS_REMOTE_URL, ''}"
+  aws_region: "${oc.env:AWS_REGION, ''}"
+  aws_profile: "${oc.env:AWS_PROFILE, ''}"
 
 cleaning:
   skew_threshold: 0.5
@@ -34,8 +34,9 @@ download:
   dataset_id: "1OuJHPpn2Wv5EhlL1J98HWYyPJM-iL8Ds"
 
 preprocessing:
-  drop_columns: ["mixed_type_col"]
   target_columns: ["Y1", "Y2"]
+  feature_columns: ["X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8"]
+  allow_missing_columns: true
   test_size: 0.2
   random_state: 42
   target_transform: "yeo-johnson"
@@ -43,9 +44,10 @@ preprocessing:
     drop: "first"
     sparse_output: false
     handle_unknown: "ignore"
+  preprocessor_file: "${paths.models}/preprocessor.pkl"
 
 training:
-  mlflow_tracking_uri: "${oc.env:MLFLOW_TRACKING_URI}"
+  mlflow_tracking_uri: "${oc.env:MLFLOW_TRACKING_URI, file:./mlruns}"
   random_state: 42
   rf_experiment_name: "rf_regressor"
   rf_registry_model_name: "RFRegressor"

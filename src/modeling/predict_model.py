@@ -12,11 +12,13 @@ class ModelPredictor:
         mlflow.set_tracking_uri(config.get("mlflow_tracking_uri", ""))  # Configura URI de MLflow
 
     # Carga del modelo entrenado (Random Forest o XGBoost)
-    def load_model(self):
+    def load_model(self, model_type=None):
         """
         Carga el modelo entrenado desde archivo local o desde el registro de MLflow.
         """
-        model_type = self.config.get("use_model", "rf").lower() # Tipo de modelo a usar
+        if model_type is None:
+            model_type = self.config.get("use_model", "rf").lower() # Tipo de modelo a usar
+        
         model_file = (
             self.config["rf_model_file"]                        # Ruta RF
             if model_type == "rf"
