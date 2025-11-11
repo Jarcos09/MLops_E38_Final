@@ -385,31 +385,29 @@ Se provee un `Dockerfile` en la raíz del proyecto para construir una imagen rep
 1) Construir la imagen (ejemplo tag semántico):
 
 ```bash
-docker build -t ml-service:latest .
-# o versión explícita
-docker build -t cremercado/ml-service:1.0.0 .
+docker build -t equipo-38/ml-service:1.0.0 .
 ```
 
 2) Ejecutar localmente (mapea puerto 8000):
 
 ```bash
-docker run --rm -p 8000:8000 cremercado/ml-service:1.0.0
+docker run --rm -p 8000:8000 equipo-38/ml-service:1.0.0
 ```
 
 3) Publicar en Docker Hub (pasos):
 
 ```bash
 # 1) Taguear la imagen local con tu repo en Docker Hub
-docker tag ml-service:latest cremercado/ml-service:1.0.0
+docker tag ml-service:latest equipo-38/ml-service:1.0.0
 
 # 2) Iniciar sesión (te pedirá usuario/contraseña)
 docker login
 
 # 3) Push
-docker push cremercado/ml-service:1.0.0
+docker push equipo-38/ml-service:1.0.0
 ```
 
 Tagging / versioning policy recomendada:
-- `cremercado/ml-service:1.0.0`  — versión fijada por release
-- `cremercado/ml-service:latest` — apuntar a la última imagen publicada
-- `cremercado/ml-service:staging` — para despliegues de pre-producción
+- `equipo-38/ml-service:1.0.0`  — versión fijada por release
+- `equipo-38/ml-service:latest` — apuntar a la última imagen publicada
+- `equipo-38/ml-service:staging` — para despliegues de pre-producción
