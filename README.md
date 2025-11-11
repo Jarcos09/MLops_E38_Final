@@ -390,21 +390,30 @@ docker build -t equipo-38/ml-service:1.0.0 .
 
 2) Ejecutar localmente (mapea puerto 8000):
 
+En primer plano
 ```bash
 docker run --rm -p 8000:8000 equipo-38/ml-service:1.0.0
+```
+
+En segundo plano
+```bash
+docker run -d --rm -p 8000:8000 equipo-38/ml-service:1.0.0
 ```
 
 3) Publicar en Docker Hub (pasos):
 
 ```bash
 # 1) Taguear la imagen local con tu repo en Docker Hub
-docker tag ml-service:latest equipo-38/ml-service:1.0.0
+docker tag equipo-38/ml-service:1.0.0 equipo-38/ml-service:latest
+docker tag equipo-38/ml-service:1.0.0 <user-name>/ml-service:1.0.0
+docker tag equipo-38/ml-service:latest <user-name>/ml-service:latest
 
 # 2) Iniciar sesión (te pedirá usuario/contraseña)
 docker login
 
 # 3) Push
-docker push equipo-38/ml-service:1.0.0
+docker push <user-name>/ml-service:1.0.0
+docker push <user-name>/ml-service:latest
 ```
 
 Tagging / versioning policy recomendada:

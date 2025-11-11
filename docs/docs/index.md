@@ -2,7 +2,7 @@
 
 ## Description
 
-Fase 2 Avance de Proyecto, Gestion del Proyecto de Machine Learning
+Fase Final Avance de Proyecto, Gestion del Proyecto de Machine Learning
 
 ## Commands
 

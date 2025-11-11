@@ -14,6 +14,5 @@ class PredictionRequest(BaseModel):
         None, description="Tipo de modelo a usar ('rf' o 'xgb'). Si no se provee, se usará el por defecto en la config."
     )
 
-
 class PredictionResponse(BaseModel):
     predictions: List[Dict[str, Any]] = Field(..., description="Lista de predicciones por instancia")

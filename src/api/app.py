@@ -131,7 +131,7 @@ def list_models():
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@app.post("/predict", response_model=PredictionResponse)
+@app.post("/predict", response_model=PredictionResponse, summary="Predicción", description="Dada una lista de instancias devuelve Y1, Y2 predichas.")
 def predict(request: PredictionRequest):
     """Endpoint para realizar predicciones.
 
