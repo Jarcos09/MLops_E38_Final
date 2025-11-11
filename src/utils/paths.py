@@ -1,18 +1,20 @@
 from pathlib import Path
+import os
+from typing import Optional
 
-# Función para asegurar la existencia de directorios a partir de una ruta
 
-# Convierte la ruta a objeto Path y crea directorios según corresponda
+# Funciones de utilidades para paths y URIs
+
 def ensure_path(path_str: str | Path) -> Path:
     """
     Convierte un string o Path en objeto Path y crea los directorios necesarios.
-    
+
     - Si la ruta es un directorio, lo crea directamente.
     - Si la ruta es un archivo, crea su carpeta contenedora.
-    
+
     Args:
         path_str (str | Path): Ruta (archivo o carpeta) a convertir/crear.
-    
+
     Returns:
         Path: Objeto Path garantizado (no crea el archivo, solo el directorio padre).
     """
@@ -26,3 +28,29 @@ def ensure_path(path_str: str | Path) -> Path:
         path.mkdir(parents=True, exist_ok=True)
 
     return path
+
+
+def normalize_mlflow_uri(uri: Optional[str]) -> Optional[str]:
+    """Normaliza la URI de MLflow.
+
+    - Si es None devuelve None.
+    - Si es del tipo `file:./mlruns` convierte a `file:///abs/path/to/mlruns`.
+    - Si ya es una URL HTTP o `file://` la devuelve tal cual.
+
+    Args:
+        uri: cadena con la URI de tracking configurada.
+
+    Returns:
+        URI normalizada o None.
+    """
+    if not uri:
+        return uri
+
+    uri = str(uri)
+    # manejar case: file:./mlruns (sin doble slash)
+    if uri.startswith("file:") and not uri.startswith("file://"):
+        path_part = uri[len("file:"):]
+        abs_path = os.path.abspath(path_part)
+        return f"file://{abs_path}"
+
+    return uri
