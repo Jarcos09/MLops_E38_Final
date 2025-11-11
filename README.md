@@ -106,8 +106,8 @@ pip install -r requirements.txt --quiet
 ```
 ## 💼 Clonar repositorio
 ```bash
-git clone https://github.com/Jarcos09/MLops_E38_F2.git
-cd MLops_E38_F2/
+git clone https://github.com/Jarcos09/MLops_E38_Final.git
+cd MLops_E38_Final/
 ```
 
 --------
