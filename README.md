@@ -366,7 +366,7 @@ uvicorn src.api.app:app --host 0.0.0.0 --port 8000 --reload
 
 ```bash
 curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" \
-  -d '{"model_type":"xgb","instances":[{"X1":0.98,"X2":514.5,"X3":294.0,"X4":110.25,"X5":7.0,"X6":2.0,"X7":0.0,"X8":0.0}]}'
+  -d '{"model_type":"xgb", "model_version":"2","instances":[{"X1":0.98,"X2":514.5,"X3":294.0,"X4":110.25,"X5":7.0,"X6":2.0,"X7":0.0,"X8":0.0}]}'
 ```
 
 ### Ruta y versión del artefacto del modelo
@@ -385,28 +385,27 @@ Se provee un `Dockerfile` en la raíz del proyecto para construir una imagen rep
 1) Construir la imagen (ejemplo tag semántico):
 
 ```bash
-docker build -t equipo-38/ml-service:1.0.0 .
+docker build -t ml-service:1.0.0 .
 ```
 
 2) Ejecutar localmente (mapea puerto 8000):
 
 En primer plano
 ```bash
-docker run --rm -p 8000:8000 equipo-38/ml-service:1.0.0
+docker run --rm -p 8000:8000 ml-service:1.0.0
 ```
 
 En segundo plano
 ```bash
-docker run -d --rm -p 8000:8000 equipo-38/ml-service:1.0.0
+docker run -d --rm -p 8000:8000 ml-service:1.0.0
 ```
 
 3) Publicar en Docker Hub (pasos):
 
 ```bash
 # 1) Taguear la imagen local con tu repo en Docker Hub
-docker tag equipo-38/ml-service:1.0.0 equipo-38/ml-service:latest
-docker tag equipo-38/ml-service:1.0.0 <user-name>/ml-service:1.0.0
-docker tag equipo-38/ml-service:latest <user-name>/ml-service:latest
+docker tag ml-service:1.0.0 <user-name>/ml-service:1.0.0
+docker tag ml-service:latest <user-name>/ml-service:latest
 
 # 2) Iniciar sesión (te pedirá usuario/contraseña)
 docker login

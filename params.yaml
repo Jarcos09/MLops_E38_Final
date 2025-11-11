@@ -18,6 +18,7 @@ data:
     y_train_file: "${paths.processed}/ytrain_processed.csv"
     y_test_file: "${paths.processed}/ytest_processed.csv"
   prediction_file: "${paths.prediction}/predictions.csv"
+  mlflow_pid_file: "${paths.models}/mlflow.pid"
 
 dvc:
   gdrive_remote_url: "${oc.env:GDRIVE_REMOTE_URL, ''}"

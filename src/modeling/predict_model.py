@@ -12,22 +12,43 @@ class ModelPredictor:
         mlflow.set_tracking_uri(config.get("mlflow_tracking_uri", ""))  # Configura URI de MLflow
 
     # Carga del modelo entrenado (Random Forest o XGBoost)
-    def load_model(self, model_type=None):
+    def load_model(self, model_type=None, model_file: str | None = None):
         """
         Carga el modelo entrenado desde archivo local o desde el registro de MLflow.
-        """
-        if model_type is None:
-            model_type = self.config.get("use_model", "rf").lower() # Tipo de modelo a usar
-        
-        model_file = (
-            self.config["rf_model_file"]                        # Ruta RF
-            if model_type == "rf"
-            else self.config["xgb_model_file"]                  # Ruta XGB
-        )
 
-        logger.info(f"Cargando modelo '{model_type.upper()}' desde {model_file}")   # Log de inicio
-        self.model = joblib.load(model_file)                                        # Carga modelo desde archivo
-        logger.success(f"Modelo {model_type.upper()} cargado correctamente.")       # Log de éxito
+        Parámetros:
+        - model_type: 'rf' o 'xgb' para seleccionar la ruta configurada si model_file es None.
+        - model_file: path o URI a usar (p. ej. 'models:/RFRegressor/1' o ruta local a .pkl).
+        """
+        if model_file is None:
+            if model_type is None:
+                model_type = self.config.get("use_model", "rf").lower()
+
+            model_file = (
+                self.config["rf_model_file"] if model_type == "rf" else self.config["xgb_model_file"]
+            )
+
+        logger.info(f"Cargando modelo desde {model_file}")
+
+        # Soportar URIs de MLflow Model Registry como models:/... o runs:/...
+        try:
+            if isinstance(model_file, str) and model_file.startswith(("models:/", "runs:/")):
+                logger.info(f"Cargando modelo desde MLflow URI: {model_file}")
+                # Cargar como PyFunc para cubrir diversos tipos de modelos
+                self.model = mlflow.pyfunc.load_model(model_file)
+            else:
+                # Intentar cargar con joblib (pickle) como fallback
+                try:
+                    self.model = joblib.load(model_file)
+                except Exception:
+                    # última opción: intentar cargar con mlflow (por si es un path local de un artifact)
+                    logger.info(f"joblib.load falló; intentando mlflow.pyfunc.load_model({model_file})")
+                    self.model = mlflow.pyfunc.load_model(model_file)
+
+            logger.success("Modelo cargado correctamente.")
+        except Exception as e:
+            logger.exception(f"Error cargando modelo desde {model_file}: {e}")
+            raise
 
     # Generación de predicciones sobre nuevas muestras
     def predict(self, X_new):

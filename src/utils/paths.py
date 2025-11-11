@@ -54,3 +54,21 @@ def normalize_mlflow_uri(uri: Optional[str]) -> Optional[str]:
         return f"file://{abs_path}"
 
     return uri
+
+
+def build_model_registry_uri(model_name: str, version: Optional[str | int]) -> str:
+    """Construye una URI para cargar modelos desde el MLflow Model Registry.
+
+    Ejemplo: build_model_registry_uri('RFRegressor', '3') -> 'models:/RFRegressor/3'
+
+    Args:
+        model_name: nombre del modelo en el registry.
+        version: número de versión (str o int). Si es None, lanza ValueError.
+
+    Returns:
+        URI tipo 'models:/<name>/<version>'.
+    """
+    if version is None:
+        raise ValueError("version is required to build a model registry URI")
+
+    return f"models:/{model_name}/{version}"

@@ -6,13 +6,12 @@ from src.modeling.predict_model import ModelPredictor
 from .schemas import PredictionRequest, PredictionResponse
 from fastapi.responses import PlainTextResponse
 from src.data.clean_dataset import DatasetCleaner
-from src.utils import paths
+from src.utils import paths, mlflow_launcher
+from src.utils.mlflow_client import MLFlowClient
 import joblib
 from pathlib import Path
-from src.data.preprocess_data import DataPreprocessor
-import mlflow
-from mlflow.tracking import MlflowClient
 import requests
+import numpy as np
 
 
 app = FastAPI(title="ML Model Serving", version=str(conf.metadata.version))
@@ -31,6 +30,14 @@ def startup_event():
             "xgb_model_file": conf.training.xgb_model_file,
             "use_model": conf.prediction.use_model,
         }
+
+        # Si la URI de tracking apunta a localhost y MLflow no está arriba,
+        # intentar arrancar un servidor MLflow local automáticamente (útil en dev).
+        try:
+            mlflow_launcher.ensure_mlflow_server(conf.training.mlflow_tracking_uri)
+        except Exception:
+            logger.debug("No se pudo arrancar MLflow automáticamente; continuar de todas formas")
+
         predictor = ModelPredictor(config=cfg)
         logger.info("Predictor inicializado y modelo cargado en memoria.")
     except Exception as e:
@@ -48,80 +55,22 @@ def list_models():
     Lista los modelos registrados en MLflow en formato de tabla de texto.
     Muestra: Nombre del modelo, última versión y versiones disponibles.
     """
-    mlflow_uri = paths.normalize_mlflow_uri(conf.training.mlflow_tracking_uri)
+    mlflow_uri = conf.training.mlflow_tracking_uri
 
     try:
-        # Verificar si el servidor MLflow remoto está disponible
-        if mlflow_uri.startswith("http"):
-            try:
-                r = requests.post(
-                    f"{mlflow_uri}/api/2.0/mlflow/registered-models/search",
-                    json={},
-                    timeout=3
-                )
-                if r.status_code >= 500:
-                    raise HTTPException(
-                        status_code=503,
-                        detail=f"El servidor MLflow en {mlflow_uri} devolvió HTTP {r.status_code}."
-                    )
-            except requests.exceptions.RequestException as re:
-                logger.warning(f"No se pudo conectar al servidor MLflow en {mlflow_uri}: {re}")
-                raise HTTPException(
-                    status_code=503,
-                    detail=f"No se pudo conectar al servidor MLflow en {mlflow_uri}. Verifica que esté encendido."
-                )
+        client = MLFlowClient(mlflow_uri)
 
-        # Configurar cliente MLflow
-        mlflow.set_tracking_uri(mlflow_uri)
-        client = MlflowClient(tracking_uri=mlflow_uri)
-
-        # Obtener modelos registrados
+        # Si el tracking es remoto, comprobar disponibilidad
         try:
-            registered = client.list_registered_models()
-        except AttributeError:
-            registered = client.search_registered_models()
+            client.check_remote_available()
+        except requests.exceptions.RequestException as re:
+            logger.warning(f"No se pudo conectar al servidor MLflow en {client.tracking_uri}: {re}")
+            raise HTTPException(
+                status_code=503,
+                detail=f"No se pudo conectar al servidor MLflow en {client.tracking_uri}. Verifica que esté encendido."
+            )
 
-        if not registered:
-            return "No hay modelos registrados en MLflow.\n"
-
-        # Construir tabla de texto
-        headers = ["Model Name", "Last Version", "Available Versions"]
-        rows = []
-
-        for rm in registered:
-            name = getattr(rm, "name", "—")
-            versions = []
-            last_version = None
-
-            # Buscar versiones del modelo
-            search_res = client.search_model_versions(f"name='{name}'")
-            for mv in search_res:
-                v = getattr(mv, "version", None)
-                if v:
-                    versions.append(f"{v}")
-                    last_version = v if not last_version or int(v) > int(last_version) else last_version
-
-            versions_str = ", ".join(versions) if versions else "—"
-            last_version_str = f"{last_version}" if last_version else "—"
-
-            rows.append([name, last_version_str, versions_str])
-
-        # Calcular anchos de columna
-        col_widths = [max(len(str(row[i])) for row in [headers] + rows) for i in range(3)]
-
-        # Función auxiliar para formatear filas
-        def fmt_row(row):
-            return "| " + " | ".join(str(row[i]).ljust(col_widths[i]) for i in range(3)) + " |"
-
-        sep = "+-" + "-+-".join("-" * w for w in col_widths) + "-+"
-
-        # Construir tabla completa
-        lines = [sep, fmt_row(headers), sep]
-        for row in rows:
-            lines.append(fmt_row(row))
-        lines.append(sep)
-
-        table_text = f"MLflow Tracking URI: {mlflow_uri}\n\n" + "\n".join(lines) + "\n"
+        table_text = client.render_models_table()
         return PlainTextResponse(content=table_text)
 
     except HTTPException:
@@ -129,6 +78,15 @@ def list_models():
     except Exception as e:
         logger.exception(f"Error consultando MLflow: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.on_event("shutdown")
+def shutdown_event():
+    """Intentar detener el MLflow server arrancado por la app en modo dev (si aplica)."""
+    try:
+        mlflow_launcher.stop_mlflow_server()
+    except Exception:
+        logger.debug("No se pudo detener MLflow automáticamente o no había servidor gestionado")
     
 
 @app.post("/predict", response_model=PredictionResponse, summary="Predicción", description="Dada una lista de instancias devuelve Y1, Y2 predichas.")
@@ -142,14 +100,47 @@ def predict(request: PredictionRequest):
         raise HTTPException(status_code=500, detail="Modelo no cargado")
 
     try:
-        # Si el usuario solicitó un tipo de modelo, recargarlo (rf/xgb)
+        # Si el usuario solicitó un tipo de modelo (rf/xgb), mapear al registry y cargar la versión deseada
         if getattr(request, "model_type", None):
             model_type = request.model_type.lower()
 
             if model_type not in {"rf", "xgb"}:
                 raise HTTPException(status_code=400, detail="model_type must be 'rf' or 'xgb'")
-            
-            predictor.load_model(model_type=model_type)
+
+            # Mapear el nombre lógico a los nombres del registry
+            registry_name = (
+                conf.training.rf_registry_model_name if model_type == "rf" else conf.training.xgb_registry_model_name
+            )
+
+            # Si el usuario provee version, usarla; si no, intentar obtener la latest desde MLflow
+            desired_version = getattr(request, "model_version", None)
+
+            model_uri_to_load = None
+
+            try:
+                mlc = MLFlowClient(conf.training.mlflow_tracking_uri)
+                # comprobar disponibilidad remota
+                try:
+                    mlc.check_remote_available()
+
+                    if desired_version:
+                        model_uri_to_load = paths.build_model_registry_uri(registry_name, desired_version)
+                    else:
+                        latest = mlc.get_latest_version(registry_name)
+                        if latest and latest.get("version"):
+                            model_uri_to_load = paths.build_model_registry_uri(registry_name, latest.get("version"))
+
+                except requests.exceptions.RequestException:
+                    # MLflow no disponible, fallback a archivos locales
+                    model_uri_to_load = None
+            except Exception:
+                model_uri_to_load = None
+
+            # Si se determinó una URI de registry, cargarla; si no, usar la lógica previa de archivos locales
+            if model_uri_to_load:
+                predictor.load_model(model_file=model_uri_to_load)
+            else:
+                predictor.load_model(model_type=model_type)
 
         # `instances` es una lista de dicts (feature->valor)
         X_new = pd.DataFrame(request.instances)
@@ -182,6 +173,29 @@ def predict(request: PredictionRequest):
                 feature_cols = list(conf.preprocessing.feature_columns)
                 X_to_transform = X_new[feature_cols]
                 X_proc = preprocessor.transform(X_to_transform)
+                # Si el preprocesador devuelve un array numpy, convertirlo a DataFrame
+                # usando los nombres de features generados por el preprocessor cuando sea posible.
+                if isinstance(X_proc, np.ndarray):
+                    feature_names = None
+                    # sklearn >=1.0: ColumnTransformer/Pipeline puede exponer get_feature_names_out
+                    try:
+                        # preferir pasar las columnas originales si get_feature_names_out acepta argumentos
+                        try:
+                            feature_names = preprocessor.get_feature_names_out(feature_cols)
+                        except Exception:
+                            feature_names = preprocessor.get_feature_names_out()
+                    except Exception:
+                        feature_names = None
+
+                    if feature_names is not None and len(feature_names) == X_proc.shape[1]:
+                        X_proc = pd.DataFrame(X_proc, columns=list(feature_names))
+                        logger.debug("Converted X_proc numpy array to DataFrame using preprocessor.get_feature_names_out()")
+                    else:
+                        # No tenemos nombres de columna adecuados; dejar numpy pero advertir
+                        logger.warning(
+                            "Preprocessor transform returned numpy array but no feature names available; "
+                            "this can cause schema mismatch when loading pyfunc models that expect named columns."
+                        )
             else:
                 logger.info("Preprocessor serializado no encontrado.")
                 raise FileNotFoundError("Preprocessor serializado no encontrado.")
