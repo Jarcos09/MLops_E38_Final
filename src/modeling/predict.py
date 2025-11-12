@@ -24,16 +24,16 @@ def predict():
 
     # Inicialización del objeto ModelPredictor con configuración
     # Intentar obtener los latest models desde MLflow Registry si está disponible
-    rf_model_uri = conf.training.rf_model_file
-    xgb_model_uri = conf.training.xgb_model_file
+    rf_model_uri = ""
+    xgb_model_uri = ""
 
     try:
-        mlc = MLFlowClient(conf.training.mlflow_tracking_uri)
+        ml_client = MLFlowClient(conf.training.mlflow_tracking_uri)
         try:
-            mlc.check_remote_available()
+            ml_client.check_remote_available()
 
-            rf_latest = mlc.get_latest_version(conf.training.rf_registry_model_name)
-            xgb_latest = mlc.get_latest_version(conf.training.xgb_registry_model_name)
+            rf_latest = ml_client.get_latest_version(conf.training.rf_registry_model_name)
+            xgb_latest = ml_client.get_latest_version(conf.training.xgb_registry_model_name)
 
             if rf_latest and rf_latest.get("version"):
                 # usar registry URI para cargar el modelo desde MLflow
@@ -53,11 +53,19 @@ def predict():
         # Cualquier error inicializando el cliente o consultando, fallback a los archivos locales
         pass
 
+    if not rf_model_uri:
+        model_path_last_rev = paths.get_latest_version_path(conf.training.rf_model_path)
+        rf_model_uri = model_path_last_rev / conf.training.rf_model_file
+
+    if not xgb_model_uri:
+        model_path_last_rev = paths.get_latest_version_path(conf.training.xgb_model_path)
+        xgb_model_uri = model_path_last_rev / conf.training.xgb_model_file
+
     predictor = ModelPredictor(
         config={
             "mlflow_tracking_uri": conf.training.mlflow_tracking_uri,   # URI de MLflow
-            "rf_model_file": rf_model_uri,               # Ruta modelo RF o registry URI
-            "xgb_model_file": xgb_model_uri,             # Ruta modelo XGB o registry URI
+            "rf_model_file_path": rf_model_uri,                         # Ruta modelo RF o registry URI
+            "xgb_model_file_path": xgb_model_uri,                       # Ruta modelo XGB o registry URI
             "use_model": conf.prediction.use_model,                     # Modelo a usar
             "output_file": conf.data.prediction_file                    # Archivo de salida
         }

@@ -1,6 +1,8 @@
 import mlflow
 import joblib
 import numpy as np
+from pathlib import Path
+from src.utils import paths
 from loguru import logger
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.multioutput import MultiOutputRegressor, MultiOutputRegressor
@@ -111,6 +113,7 @@ class ModelTrainer:
             self.log_model(
                 best_model,
                 self.config["rf_registry_model_name"], 
+                self.config["rf_model_path"], 
                 self.config["rf_model_file"], 
                 params=best_params
             )
@@ -198,6 +201,7 @@ class ModelTrainer:
             self.log_model(
                 best_model, 
                 self.config["xgb_registry_model_name"], 
+                self.config["xgb_model_path"], 
                 self.config["xgb_model_file"], 
                 params=best_params
             )
@@ -247,7 +251,7 @@ class ModelTrainer:
         return metrics
 
     # Método para loguear y versionar el modelo en MLflow
-    def log_model(self, model, model_name, model_path, params=None):
+    def log_model(self, model, model_name, model_path, model_file, params=None):
             """
             Este método auxiliar gestiona la serialización local del mejor modelo entrenado y su registro detallado en MLFlow. 
             Se encarga de loguear los parámetros finales, registrar el modelo en el MLFlow Model Registry (permitiendo el control de versiones del modelo) 
@@ -259,7 +263,9 @@ class ModelTrainer:
             logger.info(f"Registrando modelo '{model_name}' en MLflow...")
 
             # Guardar modelo localmente
-            joblib.dump(model, model_path)
+            model_path_last_rev = paths.get_next_version_path(model_path)
+            model_file_path = model_path_last_rev / model_file
+            joblib.dump(model, model_file_path)
 
             # Loggear hiperparámetros si se pasan
             if params is not None:
@@ -282,7 +288,7 @@ class ModelTrainer:
             )
 
             # Log del archivo serializado localmente
-            mlflow.log_artifact(model_path)
+            mlflow.log_artifact(model_file_path)
 
             # Etiquetas informativas
             mlflow.set_tag("model_stage", "tuned_best")

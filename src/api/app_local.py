@@ -24,10 +24,16 @@ def startup_event():
     """Inicializa y carga el modelo en memoria al iniciar la app."""
     global predictor
     try:
+        model_path_last_rev = paths.get_latest_version_path(conf.training.rf_model_path)
+        rf_model_uri = model_path_last_rev / conf.training.rf_model_file
+
+        model_path_last_rev = paths.get_latest_version_path(conf.training.xgb_model_path)
+        xgb_model_uri = model_path_last_rev / conf.training.xgb_model_file
+
         cfg = {
             "mlflow_tracking_uri": conf.training.mlflow_tracking_uri,
-            "rf_model_file": conf.training.rf_model_file,
-            "xgb_model_file": conf.training.xgb_model_file,
+            "rf_model_file_path": rf_model_uri,
+            "xgb_model_file_path": xgb_model_uri,
             "use_model": conf.prediction.use_model,
         }
 
@@ -58,19 +64,19 @@ def list_models():
     mlflow_uri = conf.training.mlflow_tracking_uri
 
     try:
-        client = MLFlowClient(mlflow_uri)
+        ml_client = MLFlowClient(mlflow_uri)
 
         # Si el tracking es remoto, comprobar disponibilidad
         try:
-            client.check_remote_available()
+            ml_client.check_remote_available()
         except requests.exceptions.RequestException as re:
-            logger.warning(f"No se pudo conectar al servidor MLflow en {client.tracking_uri}: {re}")
+            logger.warning(f"No se pudo conectar al servidor MLflow en {ml_client.tracking_uri}: {re}")
             raise HTTPException(
                 status_code=503,
-                detail=f"No se pudo conectar al servidor MLflow en {client.tracking_uri}. Verifica que esté encendido."
+                detail=f"No se pudo conectar al servidor MLflow en {ml_client.tracking_uri}. Verifica que esté encendido."
             )
 
-        table_text = client.render_models_table()
+        table_text = ml_client.render_models_table()
         return PlainTextResponse(content=table_text)
 
     except HTTPException:
@@ -118,15 +124,15 @@ def predict(request: PredictionRequest):
             model_uri_to_load = None
 
             try:
-                mlc = MLFlowClient(conf.training.mlflow_tracking_uri)
+                ml_client = MLFlowClient(conf.training.mlflow_tracking_uri)
                 # comprobar disponibilidad remota
                 try:
-                    mlc.check_remote_available()
+                    ml_client.check_remote_available()
 
                     if desired_version:
                         model_uri_to_load = paths.build_model_registry_uri(registry_name, desired_version)
                     else:
-                        latest = mlc.get_latest_version(registry_name)
+                        latest = ml_client.get_latest_version(registry_name)
                         if latest and latest.get("version"):
                             model_uri_to_load = paths.build_model_registry_uri(registry_name, latest.get("version"))
 
@@ -137,9 +143,21 @@ def predict(request: PredictionRequest):
                 model_uri_to_load = None
 
             # Si se determinó una URI de registry, cargarla; si no, usar la lógica previa de archivos locales
-            if model_uri_to_load:
-                predictor.load_model(model_file=model_uri_to_load)
-            else:
+            try:
+                if model_uri_to_load:
+                    logger.info(f"Intentando cargar modelo desde MLflow URI: {model_uri_to_load}")
+                    predictor.load_model(model_file=model_uri_to_load)
+                else:
+                    model_path = conf.training.rf_model_path if model_type == "rf" else conf.training.xgb_model_path
+                    model_file = conf.training.rf_model_file if model_type == "rf" else conf.training.xgb_model_file
+                    model_file_path = paths.build_model_local_path(model_path, desired_version, model_file)
+                    logger.info(f"Intentando cargar modelo local desde: {model_file_path}")
+                    predictor.load_model(model_file=model_file_path)
+
+            # En caso de error, fallback automático
+            except Exception as e:
+                logger.error(f"Error al cargar modelo solicitado ({model_uri_to_load or model_file_path}): {e}")
+                logger.warning("Reintentando con la versión más reciente disponible (fallback local).")
                 predictor.load_model(model_type=model_type)
 
         # `instances` es una lista de dicts (feature->valor)

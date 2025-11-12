@@ -52,10 +52,12 @@ training:
   random_state: 42
   rf_experiment_name: "rf_regressor"
   rf_registry_model_name: "RFRegressor"
-  rf_model_file: "${paths.models}/${training.rf_experiment_name}.pkl"
+  rf_model_path: "${paths.models}/${training.rf_experiment_name}"
+  rf_model_file: "${training.rf_experiment_name}.pkl"
   xgb_experiment_name: "xgb_multioutput"
   xgb_registry_model_name: "XGBMultiOutput"
-  xgb_model_file: "${paths.models}/${training.xgb_experiment_name}.pkl"
+  xgb_model_path: "${paths.models}/${training.xgb_experiment_name}"
+  xgb_model_file: "${training.xgb_experiment_name}.pkl"
 
 prediction:
   use_model: "rf"

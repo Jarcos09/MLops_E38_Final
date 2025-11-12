@@ -26,4 +26,4 @@ COPY . /app
 EXPOSE 8000
 
 # Comando por defecto para ejecutar el servidor
-CMD ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.api.app_docker:app", "--host", "0.0.0.0", "--port", "8000"]

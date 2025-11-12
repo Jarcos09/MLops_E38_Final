@@ -25,7 +25,7 @@ class ModelPredictor:
                 model_type = self.config.get("use_model", "rf").lower()
 
             model_file = (
-                self.config["rf_model_file"] if model_type == "rf" else self.config["xgb_model_file"]
+                self.config["rf_model_file_path"] if model_type == "rf" else self.config["xgb_model_file_path"]
             )
 
         logger.info(f"Cargando modelo desde {model_file}")

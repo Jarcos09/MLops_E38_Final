@@ -18,6 +18,8 @@ def train():
     """
     # Asegurar que exista la carpeta para modelos
     paths.ensure_path(conf.paths.models)
+    paths.ensure_path(conf.training.rf_model_path)
+    paths.ensure_path(conf.training.xgb_model_path)
 
     # Carga de datasets procesados
     X_train = pd.read_csv(conf.data.processed_data.x_train_file)
@@ -36,9 +38,11 @@ def train():
             "random_state": conf.training.random_state,
             "rf_experiment_name": conf.training.rf_experiment_name,
             "rf_registry_model_name": conf.training.rf_registry_model_name,
+            "rf_model_path": conf.training.rf_model_path,
             "rf_model_file": conf.training.rf_model_file,
             "xgb_experiment_name": conf.training.xgb_experiment_name,
             "xgb_registry_model_name": conf.training.xgb_registry_model_name,
+            "xgb_model_path": conf.training.xgb_model_path,
             "xgb_model_file": conf.training.xgb_model_file
         }
     )

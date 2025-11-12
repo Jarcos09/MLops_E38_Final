@@ -359,7 +359,7 @@ Ejemplo de respuesta:
 pip install -r requirements.txt
 # Desde la raíz del proyecto
 # Si tu app está en `src.api.app` o `src.serving.app` ajusta el módulo en consecuencia.
-uvicorn src.api.app:app --host 0.0.0.0 --port 8000 --reload
+uvicorn src.api.app_local:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ###  Ejemplo request `curl`:

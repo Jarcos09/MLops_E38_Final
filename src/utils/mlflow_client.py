@@ -56,6 +56,22 @@ class MLFlowClient:
 
     def search_model_versions(self, model_name: str):
         return self.client.search_model_versions(f"name='{model_name}'")
+    
+    def get_model_version(self, model_name: str, version: str):
+        """Obtiene información de una versión específica del modelo desde el registry."""
+        try:
+            mv = self.client.get_model_version(name=model_name, version=version)
+            return {
+                "version": getattr(mv, "version", None),
+                "stage": getattr(mv, "current_stage", None) or getattr(mv, "stage", None),
+                "source": getattr(mv, "source", None),
+                "run_id": getattr(mv, "run_id", None),
+            }
+        except Exception as e:
+            raise RuntimeError(
+                f"No se pudo obtener la versión {version} del modelo '{model_name}': {e}"
+            )
+
 
     def get_latest_version(self, model_name: str) -> Optional[Dict]:
         """Retorna la última versión (numérica mayor) del modelo como dict.
