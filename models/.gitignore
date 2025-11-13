@@ -1,2 +1,4 @@
-/model_xgb.pkl
-/*.pkl
+# Ignorar todo dentro de models/
+*
+# Pero permitir que se rastree este propio .gitignore
+!.gitignore

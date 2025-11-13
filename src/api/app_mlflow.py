@@ -1,17 +1,17 @@
+import joblib
+import numpy as np
 import pandas as pd
+import requests
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import PlainTextResponse
 from loguru import logger
 from src.config.config import conf
-from src.modeling.predict_model import ModelPredictor
-from .schemas import PredictionRequest, PredictionResponse
-from fastapi.responses import PlainTextResponse
 from src.data.clean_dataset import DatasetCleaner
-from src.utils import paths, mlflow_launcher
+from src.modeling.predict_model import ModelPredictor
+from src.utils import mlflow_launcher, paths
 from src.utils.mlflow_client import MLFlowClient
-import joblib
-from pathlib import Path
-import requests
-import numpy as np
+from .schemas import PredictionRequest, PredictionResponse
 
 
 app = FastAPI(title="ML Model Serving", version=str(conf.metadata.version))
@@ -44,12 +44,12 @@ def startup_event():
         logger.exception(f"Error cargando el modelo en startup: {e}")
 
 
-@app.get("/health")
+@app.get("/health", summary="Health check", description="Verifica el estado del servicio.")
 def health():
     return {"status": "ok", "model_loaded": predictor is not None}
 
 
-@app.get("/models", response_class=PlainTextResponse)
+@app.get("/models", response_class=PlainTextResponse, summary="Modelos disponibles", description="Lista los modelos disponibles (nombre, versión más reciente y versiones registradas).")
 def list_models():
     """
     Lista los modelos registrados en MLflow en formato de tabla de texto.

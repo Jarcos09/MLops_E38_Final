@@ -1,16 +1,16 @@
 import os
+import joblib
+import numpy as np
 import pandas as pd
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import PlainTextResponse
 from loguru import logger
 from src.config.config import conf
-from src.modeling.predict_model import ModelPredictor
-from .schemas import PredictionRequest, PredictionResponse
-from fastapi.responses import PlainTextResponse
 from src.data.clean_dataset import DatasetCleaner
+from src.modeling.predict_model import ModelPredictor
 from src.utils import paths
-import joblib
-from pathlib import Path
-import numpy as np
+from .schemas import PredictionRequest, PredictionResponse
 
 
 app = FastAPI(title="ML Model Serving", version=str(conf.metadata.version))
@@ -42,12 +42,12 @@ def startup_event():
         logger.error(f"Error cargando el modelo en startup: {e}")
 
 
-@app.get("/health")
+@app.get("/health", summary="Health check", description="Verifica el estado del servicio.")
 def health():
     return {"status": "ok", "model_loaded": predictor is not None}
 
 
-@app.get("/models", response_class=PlainTextResponse)
+@app.get("/models", response_class=PlainTextResponse, summary="Modelos disponibles", description="Lista los modelos disponibles (nombre, versión más reciente y versiones registradas).")
 def list_models():
     """
     Explora la carpeta local 'models/' y devuelve una tabla de texto con:
@@ -103,7 +103,6 @@ def list_models():
 
     table_text = "\n".join(lines)
     return table_text
-
 
 
 @app.post("/predict", response_model=PredictionResponse, summary="Predicción", description="Dada una lista de instancias devuelve Y1, Y2 predichas.")
