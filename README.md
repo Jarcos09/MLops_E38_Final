@@ -320,6 +320,7 @@ python -m src.modeling.plots --plot-type correlation --filename corr_matrix.png
 ```
 
 --------
+--------
 
 ## 🚀 Model serving (FastAPI)
 
@@ -327,24 +328,47 @@ Servicio HTTP para exponer el modelo entrenado.
 
 ---
 
+### Ejecución del servicio localmente:
+
+```bash
+uvicorn src.api.app_mlflow:app --host 0.0.0.0 --port 8000 --reload
+```
+
 ### Endpoints
 
-Se cuenta con `2` endpoints:
+Se cuenta con `3` endpoints:
 - Examinación de operatividad: `GET /health`
+- Examinación de versiones disponibles por modelo: `GET /models`
 - Predicción: `POST /predict` (JSON)
 
-#### Endpoint de predicción
-Esquema de entrada (JSON):
+### Endpoint `POST /predict`
 
-{
-  "model_type": "xgb",
-  "instances": [
-    {"X1": 1.0, "X2": 2.0, "X3": 0.5},
-    { ... }
-  ]
-}
+####  Predicción **RadomForest**
 
-Ejemplo de respuesta:
+Utilizar RadomForest con versión
+```bash
+curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"model_type":"rf", "model_version":"1","instances":[{"X1":0.98,"X2":514.5,"X3":294.0,"X4":110.25,"X5":7.0,"X6":2.0,"X7":0.0,"X8":0.0}]}'
+```
+
+Utilizar RadomForest con última versión disponible
+```bash
+curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"model_type":"rf","instances":[{"X1":0.98,"X2":514.5,"X3":294.0,"X4":110.25,"X5":7.0,"X6":2.0,"X7":0.0,"X8":0.0}]}'
+```
+
+####  Predicción **XGBoost**
+
+Utilizar XGBoost con versión
+```bash
+curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"model_type":"xgb", "model_version":"1","instances":[{"X1":0.98,"X2":514.5,"X3":294.0,"X4":110.25,"X5":7.0,"X6":2.0,"X7":0.0,"X8":0.0}]}'
+```
+
+Utilizar XGBoost con última versión disponible
+```bash
+curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"model_type":"xgb","instances":[{"X1":0.98,"X2":514.5,"X3":294.0,"X4":110.25,"X5":7.0,"X6":2.0,"X7":0.0,"X8":0.0}]}'
+```
+
+
+####  Ejemplo de respuesta:
 
 {
     "predictions": [
@@ -353,21 +377,7 @@ Ejemplo de respuesta:
     ]
 }
 
-### Ejecución del servicio localmente:
 
-```bash
-pip install -r requirements.txt
-# Desde la raíz del proyecto
-# Si tu app está en `src.api.app` o `src.serving.app` ajusta el módulo en consecuencia.
-uvicorn src.api.app_local:app --host 0.0.0.0 --port 8000 --reload
-```
-
-###  Ejemplo request `curl`:
-
-```bash
-curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" \
-  -d '{"model_type":"xgb", "model_version":"2","instances":[{"X1":0.98,"X2":514.5,"X3":294.0,"X4":110.25,"X5":7.0,"X6":2.0,"X7":0.0,"X8":0.0}]}'
-```
 
 ### Ruta y versión del artefacto del modelo
 
