@@ -7,6 +7,7 @@
 Fase 3 Avance de Proyecto, Gestion del Proyecto de Machine Learning
 
 --------
+--------
 
 ## Project Organization
 
@@ -73,12 +74,14 @@ Fase 3 Avance de Proyecto, Gestion del Proyecto de Machine Learning
 ```
 
 --------
+--------
 
 # Fase 2 | Avance de Proyecto
 # Equipo 38
 
 En esta actividad se continuará con el desarrollo del proyecto, dando seguimiento a los avances realizados en la Fase 1. Se mantendrá la propuesta de valor, el análisis elaborado con el ML Canvas, así como los datos, modelos y experimentos previamente desarrollados. El objetivo ahora es estructurar el proyecto de Machine Learning de forma profesional, aplicando buenas prácticas como la refactorización del código, el control de versiones, el seguimiento de experimentos, el registro de métricas y modelos, y el aseguramiento de la reproducibilidad.
 
+--------
 --------
 
 ## 🎯 Objetivos
@@ -89,6 +92,7 @@ En esta actividad se continuará con el desarrollo del proyecto, dando seguimien
 - Registrar métricas y aplicar control de versiones  a los experimentos utilizando herramientas de loging y tracking  (MLFlow/DVC)
 - Visualizar y comparar resultados (métricas) y gestionar el registro de los modelos (Data Registry MLFlow/DVC)
 
+--------
 --------
 
 ## 👥 Roles del Equipo
@@ -101,12 +105,14 @@ En esta actividad se continuará con el desarrollo del proyecto, dando seguimien
 | Mario Javier Soriano Aguilera | `A01384282` | ML Engineer  |
 
 --------
+--------
 
 ## 📦 Instalar paqueterías
 ```bash
 pip install -r requirements.txt --quiet
 ```
 
+--------
 --------
 
 ## 💼 Clonar repositorio
@@ -116,6 +122,7 @@ cd MLops_E38_Final/
 ```
 
 --------
+--------
 
 ## 🔧 Recomendación previa a la ejecución
 
@@ -124,6 +131,7 @@ Antes de ejecutar cualquier comando con make, asegúrate de:
 - Tener activado el ambiente virtual correspondiente.
 Esto garantiza que las rutas, dependencias y configuraciones se interpreten correctamente durante la ejecución automatizada.
 
+--------
 --------
 
 ## 📚 Makefile
@@ -218,6 +226,7 @@ make dvc_status
 ```
 
 --------
+--------
 
 ## 🧠 MLflow
 
@@ -255,6 +264,7 @@ http://localhost:5000
 
 * `config/config.py`: Define la URI de tracking (mlflow_tracking_uri).
 
+--------
 --------
 
 ## 💾 DVC
@@ -329,6 +339,7 @@ aws s3 ls s3://itesm-mna/202502-equipo38 --recursive --profile equipo38 | head
 ``` 
 
 --------
+--------
 
 ## 📊 Plots
 
@@ -353,6 +364,7 @@ Ejemplo de correlation matrix:
 python -m src.modeling.plots --plot-type correlation --filename corr_matrix.png
 ```
 
+--------
 --------
 
 ## 🚀 Model serving (FastAPI)
@@ -463,6 +475,7 @@ En este proyecto la clase `app_docker.py` resulve dos tipos de rutas con base en
 - `models/rf_regressor/<version>/rf_regressor.pkl`.
 - `models/xgb_multioutput/<version>/xgb_multioutput.pkl`.
 
+--------
 --------
 
 ## 📦 Contenerizar la API (Docker)
