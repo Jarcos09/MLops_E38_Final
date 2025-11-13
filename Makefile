@@ -241,3 +241,32 @@ dvc_pull:
 .PHONY: dvc_status
 dvc_status:
 	dvc status
+
+#################################################################################
+# DOCKER COMMANDS                                                               #
+#################################################################################
+
+## Construye la imagen Docker localmente
+.PHONY: docker-build
+docker-build:
+	docker build -t ml-service:1.0.0 .
+
+## Ejecuta el contenedor localmente en segundo plano (puerto 8000)
+.PHONY: docker-run
+docker-run:
+	docker run -d --rm -p 8000:8000 --name ml-service ml-service:1.0.0
+
+## Detiene el contenedor si está corriendo
+.PHONY: docker-stop
+docker-stop:
+	@if [ "$$(docker ps -q -f name=ml-service)" ]; then \
+		echo "Deteniendo contenedor ml-service..."; \
+		docker stop ml-service; \
+	else \
+		echo "No hay contenedor ml-service en ejecución."; \
+	fi
+
+## Baja (pull) la imagen publicada en Docker Hub
+.PHONY: docker-pull
+docker-pull:
+	docker pull cremercado/ml-service:1.0.0

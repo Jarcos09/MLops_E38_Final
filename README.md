@@ -225,6 +225,26 @@ Verificar qué etapas del pipeline están desactualizadas:
 make dvc_status
 ```
 
+Construye la imagen Docker localmente:
+```bash
+make docker-build
+```
+
+Ejecuta el contenedor localmente en segundo plano (puerto 8000):
+```bash
+make docker-run
+```
+
+Detiene el contenedor si está corriendo:
+```bash
+make docker-stop
+```
+
+Baja (pull) la imagen publicada en Docker Hub:
+```bash
+make docker-pull
+```
+
 --------
 --------
 
@@ -508,6 +528,7 @@ docker run -d --rm -p 8000:8000 --name ml-service ml-service:1.0.0
 
 ```bash
 # 1) Taguear la imagen local con tu repo en Docker Hub
+docker tag ml-service:1.0.0 ml-service:latest
 docker tag ml-service:1.0.0 <user-name>/ml-service:1.0.0
 docker tag ml-service:latest <user-name>/ml-service:latest
 
@@ -521,13 +542,9 @@ docker push <user-name>/ml-service:latest
 
 ---
 
-### Tagging / versioning policy
+### DockerHub
 
-Versión fijada por release: `equipo-38/ml-service:1.0.0`
-
-Apuntar a la última imagen publicada: `equipo-38/ml-service:latest`
-
-Para despliegues de pre-producción: `equipo-38/ml-service:staging`
+[Repositorio DockerHub del Proyecto](https://hub.docker.com/repository/docker/cremercado/ml-service/general)
 
 --------
 --------
