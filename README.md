@@ -6,6 +6,9 @@
 
 Fase 3 Avance de Proyecto, Gestion del Proyecto de Machine Learning
 
+--------
+--------
+
 ## Project Organization
 
 ```
@@ -71,12 +74,14 @@ Fase 3 Avance de Proyecto, Gestion del Proyecto de Machine Learning
 ```
 
 --------
+--------
 
 # Fase 2 | Avance de Proyecto
 # Equipo 38
 
 En esta actividad se continuará con el desarrollo del proyecto, dando seguimiento a los avances realizados en la Fase 1. Se mantendrá la propuesta de valor, el análisis elaborado con el ML Canvas, así como los datos, modelos y experimentos previamente desarrollados. El objetivo ahora es estructurar el proyecto de Machine Learning de forma profesional, aplicando buenas prácticas como la refactorización del código, el control de versiones, el seguimiento de experimentos, el registro de métricas y modelos, y el aseguramiento de la reproducibilidad.
 
+--------
 --------
 
 ## 🎯 Objetivos
@@ -87,6 +92,7 @@ En esta actividad se continuará con el desarrollo del proyecto, dando seguimien
 - Registrar métricas y aplicar control de versiones  a los experimentos utilizando herramientas de loging y tracking  (MLFlow/DVC)
 - Visualizar y comparar resultados (métricas) y gestionar el registro de los modelos (Data Registry MLFlow/DVC)
 
+--------
 --------
 
 ## 👥 Roles del Equipo
@@ -99,11 +105,16 @@ En esta actividad se continuará con el desarrollo del proyecto, dando seguimien
 | Mario Javier Soriano Aguilera | `A01384282` | ML Engineer  |
 
 --------
+--------
 
 ## 📦 Instalar paqueterías
 ```bash
 pip install -r requirements.txt --quiet
 ```
+
+--------
+--------
+
 ## 💼 Clonar repositorio
 ```bash
 git clone https://github.com/Jarcos09/MLops_E38_Final.git
@@ -111,15 +122,23 @@ cd MLops_E38_Final/
 ```
 
 --------
-🔧 Recomendación previa a la ejecución
+--------
+
+## 🔧 Recomendación previa a la ejecución
 
 Antes de ejecutar cualquier comando con make, asegúrate de:
 - Estar ubicado en la carpeta raíz del proyecto.
 - Tener activado el ambiente virtual correspondiente.
 Esto garantiza que las rutas, dependencias y configuraciones se interpreten correctamente durante la ejecución automatizada.
 
+--------
+--------
 
 ## 📚 Makefile
+
+**Makefile** se utiliza para automatizar el ciclo de vida de todo el proyecto.
+
+---
 
 Descargar Dataset:
 ```bash
@@ -207,6 +226,7 @@ make dvc_status
 ```
 
 --------
+--------
 
 ## 🧠 MLflow
 
@@ -230,8 +250,12 @@ mlflow server \
     --port 5000
 ````
 
+---
+
 ### Interfaz
 http://localhost:5000
+
+---
 
 ### Integración en el Proyecto
 * `train_model.py`: Registra métricas, parámetros y modelos (Random Forest, XGBoost).
@@ -241,8 +265,13 @@ http://localhost:5000
 * `config/config.py`: Define la URI de tracking (mlflow_tracking_uri).
 
 --------
+--------
 
 ## 💾 DVC
+
+Configuración de repositorio para versionar datos utilizando Data Version Control (DVC)
+
+---
 
 ### Inicialización de Repositorio DVC
 
@@ -260,6 +289,9 @@ También, se puede inicializar manualmente de la siguiente manera:
 ```bash
 dvc init
 ```
+
+---
+
 ### GDRIVE
 #### Agregar Repositorio DVC (GDrive)
 ```bash
@@ -271,6 +303,8 @@ dvc remote add -d data "$GDRIVE_REMOTE_URL"
 dvc remote modify data gdrive_client_id "$GDRIVE_CLIENT_ID"
 dvc remote modify data gdrive_client_secret "$GDRIVE_CLIENT_SECRET"
 ```
+
+---
 
 ### AWS
 #### Agregar Repositorio DVC (AWS)
@@ -284,13 +318,19 @@ dvc remote modify team_remote region "$AWS_REGION"
 dvc remote modify team_remote profile "$AWS_PROFILE"
 ```
 
+---
+
 ### Verificar Repositorios DVC Configurados
 ```bash
 dvc remote list
 ```
 
+---
+
 ### Repositorio DVC (GDrive)
 [Carpeta Principal del Proyecto en Google Drive](https://drive.google.com/drive/u/2/folders/1VnjNYOpP2uSaaUtFdRzW45iwZJUbt-5v)
+
+---
 
 ### Repositorio DVC (AWS)
 Lista todos los objetos dentro de todos los subdirectorios:
@@ -299,8 +339,13 @@ aws s3 ls s3://itesm-mna/202502-equipo38 --recursive --profile equipo38 | head
 ``` 
 
 --------
+--------
 
 ## 📊 Plots
+
+Genración de figuras y reportes
+
+---
 
 ### Generar plots
 
@@ -333,6 +378,7 @@ Servicio HTTP para exponer el modelo entrenado.
 ```bash
 uvicorn src.api.app_mlflow:app --host 0.0.0.0 --port 8000 --reload
 ```
+---
 
 ### Endpoints
 
@@ -340,6 +386,35 @@ Se cuenta con `3` endpoints:
 - Examinación de operatividad: `GET /health`
 - Examinación de versiones disponibles por modelo: `GET /models`
 - Predicción: `POST /predict` (JSON)
+
+---
+
+### Endpoint `GET /health`
+
+Checar los modelos disponibles (úlitma versión disponible y versiones disponibles)
+```bash
+curl -X GET 'http://localhost:8000/health'
+```
+
+####  Ejemplo de respuesta:
+{"status":"ok","model_loaded":true}
+
+---
+
+### Endpoint `GET /models`
+
+Checar los modelos disponibles (úlitma versión disponible y versiones disponibles)
+```bash
+curl -X GET 'http://localhost:8000/models'
+```
+
+####  Ejemplo de respuesta:
+| Model Name     | Last Version | Available Versions |
+|----------------|--------------|--------------------|
+| RFRegressor    | 2            | 2, 1               |
+| XGBMultiOutput | 2            | 2, 1               |
+
+---
 
 ### Endpoint `POST /predict`
 
@@ -367,7 +442,6 @@ Utilizar XGBoost con última versión disponible
 curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"model_type":"xgb","instances":[{"X1":0.98,"X2":514.5,"X3":294.0,"X4":110.25,"X5":7.0,"X6":2.0,"X7":0.0,"X8":0.0}]}'
 ```
 
-
 ####  Ejemplo de respuesta:
 
 {
@@ -377,20 +451,40 @@ curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json"
     ]
 }
 
-
+---
 
 ### Ruta y versión del artefacto del modelo
 
-El proyecto registra modelos en MLflow y también guarda un artefacto local. Se puede referenciar el artefacto usando dos formas:
+El proyecto registra modelos en MLflow y también guarda un artefacto local. Se puede referenciar el artefacto usando dos formas.
 
-- Ruta local (archivo): `models/rf_regressor.pkl` (configurado en `params.yaml`, propiedad `training.rf_model_file`).
-- Registro MLflow (Model Registry): `models:/RFRegressor/<version>` (por ejemplo `models:/RFRegressor/1`).
+####  Registro MLflow (Model Registry)
 
----
+**MLflow** registra y resulve las rutas: `models:/<name>/<version>`.
+
+En este proyecto la clase `app_mlflow.py` resulve dos tipos de rutas con base en los modelos usados:
+- `models:/RFRegressor/<version>`.
+- `models:/XGBMultiOutput/<version>`.
+
+Los modelos **MLflow** guradan los modelos con rutas completas y no relativas. De esta manera, no es posible subir y resolver modelos con **MLflow** dentro de un contenedor **Docker**.
+
+####  Ruta local (archivo)
+
+Durante el entrenamiento de `trian.py`, se registra y resulve las rutas: `models/<name>/<version>/<name>.pkl`.
+
+En este proyecto la clase `app_docker.py` resulve dos tipos de rutas con base en los modelos usados:
+- `models/rf_regressor/<version>/rf_regressor.pkl`.
+- `models/xgb_multioutput/<version>/xgb_multioutput.pkl`.
+
+--------
+--------
 
 ## 📦 Contenerizar la API (Docker)
 
 Se provee un `Dockerfile` en la raíz del proyecto para construir una imagen reproducible que incluya el servicio FastAPI y los artefactos del proyecto (incluyendo `models/` si lo deseas copiar dentro de la imagen).
+
+---
+
+### Construcción y despliegue
 
 1) Construir la imagen (ejemplo tag semántico):
 
@@ -402,12 +496,12 @@ docker build -t ml-service:1.0.0 .
 
 En primer plano
 ```bash
-docker run --rm -p 8000:8000 ml-service:1.0.0
+docker run --rm -p 8000:8000 --name ml-service ml-service:1.0.0
 ```
 
 En segundo plano
 ```bash
-docker run -d --rm -p 8000:8000 ml-service:1.0.0
+docker run -d --rm -p 8000:8000 --name ml-service ml-service:1.0.0
 ```
 
 3) Publicar en Docker Hub (pasos):
@@ -425,7 +519,12 @@ docker push <user-name>/ml-service:1.0.0
 docker push <user-name>/ml-service:latest
 ```
 
-Tagging / versioning policy recomendada:
-- `equipo-38/ml-service:1.0.0`  — versión fijada por release
-- `equipo-38/ml-service:latest` — apuntar a la última imagen publicada
-- `equipo-38/ml-service:staging` — para despliegues de pre-producción
+---
+
+### Tagging / versioning policy
+
+Versión fijada por release: `equipo-38/ml-service:1.0.0`
+
+Apuntar a la última imagen publicada: `equipo-38/ml-service:latest`
+
+Para despliegues de pre-producción: `equipo-38/ml-service:staging`
