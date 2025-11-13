@@ -475,23 +475,23 @@ curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json"
 
 ### Ruta y versión del artefacto del modelo
 
-El proyecto registra modelos en MLflow y también guarda un artefacto local. Se puede referenciar el artefacto usando dos formas.
+El proyecto registra modelos en MLFlow y también guarda un artefacto local. Se puede referenciar el artefacto usando dos formas.
 
-####  Registro MLflow (Model Registry)
+####  Registro MLFlow (Model Registry)
 
-**MLflow** registra y resulve las rutas: `models:/<name>/<version>`.
+**MLFlow** registra y resuelve las rutas: `models:/<name>/<version>`.
 
-En este proyecto la clase `app_mlflow.py` resulve dos tipos de rutas con base en los modelos usados:
+En este proyecto la clase `app_mlflow.py` resuelve dos tipos de rutas con base en los modelos usados:
 - `models:/RFRegressor/<version>`.
 - `models:/XGBMultiOutput/<version>`.
 
-Los modelos **MLflow** guradan los modelos con rutas completas y no relativas. De esta manera, no es posible subir y resolver modelos con **MLflow** dentro de un contenedor **Docker**.
+Los modelos **MLFlow** guradan los modelos con rutas completas y no relativas. De esta manera, no es posible subir y resolver modelos con **MLFlow** dentro de un contenedor **Docker**.
 
 ####  Ruta local (archivo)
 
-Durante el entrenamiento de `trian.py`, se registra y resulve las rutas: `models/<name>/<version>/<name>.pkl`.
+Durante el entrenamiento de `trian.py`, se registra y resuelve las rutas: `models/<name>/<version>/<name>.pkl`.
 
-En este proyecto la clase `app_docker.py` resulve dos tipos de rutas con base en los modelos usados:
+En este proyecto la clase `app_docker.py` resuelve dos tipos de rutas con base en los modelos usados:
 - `models/rf_regressor/<version>/rf_regressor.pkl`.
 - `models/xgb_multioutput/<version>/xgb_multioutput.pkl`.
 
