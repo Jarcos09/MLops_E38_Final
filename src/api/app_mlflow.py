@@ -24,16 +24,10 @@ def startup_event():
     """Inicializa y carga el modelo en memoria al iniciar la app."""
     global predictor
     try:
-        model_path_last_rev = paths.get_latest_version_path(conf.training.rf_model_path)
-        rf_model_uri = model_path_last_rev / conf.training.rf_model_file
-
-        model_path_last_rev = paths.get_latest_version_path(conf.training.xgb_model_path)
-        xgb_model_uri = model_path_last_rev / conf.training.xgb_model_file
-
         cfg = {
             "mlflow_tracking_uri": conf.training.mlflow_tracking_uri,
-            "rf_model_file_path": rf_model_uri,
-            "xgb_model_file_path": xgb_model_uri,
+            "rf_model_file_path": None,
+            "xgb_model_file_path": None,
             "use_model": conf.prediction.use_model,
         }
 
@@ -42,12 +36,12 @@ def startup_event():
         try:
             mlflow_launcher.ensure_mlflow_server(conf.training.mlflow_tracking_uri)
         except Exception:
-            logger.debug("No se pudo arrancar MLflow automáticamente; continuar de todas formas")
+            logger.exception("No se pudo arrancar MLflow automáticamente; continuar de todas formas")
 
         predictor = ModelPredictor(config=cfg)
         logger.info("Predictor inicializado y modelo cargado en memoria.")
     except Exception as e:
-        logger.error(f"Error cargando el modelo en startup: {e}")
+        logger.exception(f"Error cargando el modelo en startup: {e}")
 
 
 @app.get("/health")
@@ -70,7 +64,7 @@ def list_models():
         try:
             ml_client.check_remote_available()
         except requests.exceptions.RequestException as re:
-            logger.warning(f"No se pudo conectar al servidor MLflow en {ml_client.tracking_uri}: {re}")
+            logger.exception(f"No se pudo conectar al servidor MLflow en {ml_client.tracking_uri}: {re}")
             raise HTTPException(
                 status_code=503,
                 detail=f"No se pudo conectar al servidor MLflow en {ml_client.tracking_uri}. Verifica que esté encendido."
@@ -84,15 +78,6 @@ def list_models():
     except Exception as e:
         logger.exception(f"Error consultando MLflow: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.on_event("shutdown")
-def shutdown_event():
-    """Intentar detener el MLflow server arrancado por la app en modo dev (si aplica)."""
-    try:
-        mlflow_launcher.stop_mlflow_server()
-    except Exception:
-        logger.debug("No se pudo detener MLflow automáticamente o no había servidor gestionado")
     
 
 @app.post("/predict", response_model=PredictionResponse, summary="Predicción", description="Dada una lista de instancias devuelve Y1, Y2 predichas.")
@@ -103,6 +88,7 @@ def predict(request: PredictionRequest):
     una lista de objetos con las predicciones.
     """
     if predictor is None:
+        logger.exception("Modelo no cargado.")
         raise HTTPException(status_code=500, detail="Modelo no cargado")
 
     try:
@@ -111,6 +97,7 @@ def predict(request: PredictionRequest):
             model_type = request.model_type.lower()
 
             if model_type not in {"rf", "xgb"}:
+                logger.exception("Tipo de modelo no valido.")
                 raise HTTPException(status_code=400, detail="model_type must be 'rf' or 'xgb'")
 
             # Mapear el nombre lógico a los nombres del registry
@@ -129,36 +116,45 @@ def predict(request: PredictionRequest):
                 try:
                     ml_client.check_remote_available()
 
-                    if desired_version:
-                        model_uri_to_load = paths.build_model_registry_uri(registry_name, desired_version)
-                    else:
+                    if desired_version == conf.prediction.use_version:
                         latest = ml_client.get_latest_version(registry_name)
                         if latest and latest.get("version"):
                             model_uri_to_load = paths.build_model_registry_uri(registry_name, latest.get("version"))
+                    else:
+                        model_uri_to_load = paths.build_model_registry_uri(registry_name, desired_version)
 
                 except requests.exceptions.RequestException:
                     # MLflow no disponible, fallback a archivos locales
-                    model_uri_to_load = None
+                    logger.exception(f"No se pudo conectar al servidor MLflow en {ml_client.tracking_uri}.")
+                    raise HTTPException(
+                        status_code=503,
+                        detail=f"No se pudo conectar al servidor MLflow en {ml_client.tracking_uri}. Verifica que esté encendido."
+                    )
             except Exception:
-                model_uri_to_load = None
+                logger.exception("Error consultando MLflow para obtener el modelo solicitado.")
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Error consultando MLflow para obtener el modelo solicitado."
+                )
 
             # Si se determinó una URI de registry, cargarla; si no, usar la lógica previa de archivos locales
-            try:
-                if model_uri_to_load:
-                    logger.info(f"Intentando cargar modelo desde MLflow URI: {model_uri_to_load}")
-                    predictor.load_model(model_file=model_uri_to_load)
-                else:
-                    model_path = conf.training.rf_model_path if model_type == "rf" else conf.training.xgb_model_path
-                    model_file = conf.training.rf_model_file if model_type == "rf" else conf.training.xgb_model_file
-                    model_file_path = paths.build_model_local_path(model_path, desired_version, model_file)
-                    logger.info(f"Intentando cargar modelo local desde: {model_file_path}")
-                    predictor.load_model(model_file=model_file_path)
+            if model_uri_to_load is None:
+                logger.exception("No se pudo determinar la URI del modelo solicitado.")
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"No se pudo determinar la URI del modelo solicitado ({model_type} v{desired_version})."
+                )
 
-            # En caso de error, fallback automático
-            except Exception as e:
-                logger.error(f"Error al cargar modelo solicitado ({model_uri_to_load or model_file_path}): {e}")
-                logger.warning("Reintentando con la versión más reciente disponible (fallback local).")
-                predictor.load_model(model_type=model_type)
+            # En caso de error
+            try:
+                logger.info(f"Intentando cargar modelo desde MLflow URI: {model_uri_to_load}")
+                predictor.load_model(model_file=model_uri_to_load)
+            except Exception:
+                logger.exception("No se pudo cargar el modelo correctamente.")
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"No se pudo encontrar el modelo solicitado ({model_type} v{desired_version})."
+                )
 
         # `instances` es una lista de dicts (feature->valor)
         X_new = pd.DataFrame(request.instances)
@@ -230,3 +226,12 @@ def predict(request: PredictionRequest):
     except Exception as exc:
         logger.exception("Error al generar la predicción")
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.on_event("shutdown")
+def shutdown_event():
+    """Intentar detener el MLflow server arrancado por la app en modo dev (si aplica)."""
+    try:
+        mlflow_launcher.stop_mlflow_server()
+    except Exception:
+        logger.debug("No se pudo detener MLflow automáticamente o no había servidor gestionado")

@@ -1,21 +1,35 @@
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from src.config.config import conf
 
 
 class PredictionRequest(BaseModel):
-    """Payload esperado por POST /predict.
+    """Payload esperado por POST /predict."""
 
-    Usamos una lista de dicts para `instances` para mantener compatibilidad tanto
-    con Pydantic v1 como v2 y evitar utilizar `__root__` o `RootModel`.
-    """
+    instances: List[Dict[str, Any]] = Field(
+        ..., description="Lista de instancias a predecir"
+    )
 
-    instances: List[Dict[str, Any]] = Field(..., description="Lista de instancias a predecir")
     model_type: Optional[str] = Field(
-        None, description="Tipo de modelo a usar ('rf' o 'xgb'). Si no se provee, se usará el por defecto en la config."
+        conf.prediction.use_model,  # valor por defecto dinámico
+        description=f"Tipo de modelo a usar ('rf' o 'xgb'). Por defecto '{conf.prediction.use_model}'."
     )
+
     model_version: Optional[str] = Field(
-        None, description="Versión del modelo a usar en el Model Registry (ej: '1'). Si no se indica, se usará la latest si se puede consultar MLflow."
+        conf.prediction.use_version,
+        description="Versión del modelo a usar ('1', '2', etc.). Por defecto 'latest'."
     )
+
+    @field_validator("model_type")
+    @classmethod
+    def validate_model_type(cls, v):
+        allowed = {"rf", "xgb"}
+        if v not in allowed:
+            raise ValueError(f"model_type debe ser uno de: {allowed}")
+        return v
+
 
 class PredictionResponse(BaseModel):
-    predictions: List[Dict[str, Any]] = Field(..., description="Lista de predicciones por instancia")
+    predictions: List[Dict[str, Any]] = Field(
+        ..., description="Lista de predicciones por instancia"
+    )
