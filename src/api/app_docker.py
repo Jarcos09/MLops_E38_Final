@@ -13,7 +13,25 @@ from src.utils import paths
 from .schemas import PredictionRequest, PredictionResponse
 
 
-app = FastAPI(title="ML Model Serving", version=str(conf.metadata.version))
+app = FastAPI(
+    title="ML Model Serving API",
+    description="""
+    API para servir modelos de Machine Learning del Equipo 38.
+    Incluye endpoints para verificar salud del servicio, listar versiones de modelos
+    y realizar predicciones sobre instancias de entrada.
+
+    Resuelve los modelos con base en la ruta local: models/<name>/<version>/<name>.pkl
+    """,
+    version=str(conf.metadata.version),
+    contact={
+        "name": conf.metadata.author,
+        "url": "https://github.com/Jarcos09/MLops_E38_Final"
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+)
 
 # Cargar predictor globalmente para reutilizar la instancia entre peticiones
 predictor = None

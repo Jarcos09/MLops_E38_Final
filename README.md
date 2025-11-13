@@ -562,3 +562,7 @@ Al abrir [http://localhost:8000/docs](http://localhost:8000/docs), se verá una 
 - **Descripción y parámetros esperados.**
 - **Ejemplo de request y response.**
 - **Botón “Try it out”** para probar directamente la API desde el navegador.
+
+<p align="center">
+  <img src="./docs/images/swagger/swagger-docs.png" alt="Swagger UI Screenshot" width="700"/>
+</p>
