@@ -528,3 +528,37 @@ Versión fijada por release: `equipo-38/ml-service:1.0.0`
 Apuntar a la última imagen publicada: `equipo-38/ml-service:latest`
 
 Para despliegues de pre-producción: `equipo-38/ml-service:staging`
+
+--------
+--------
+
+## 🧾 Documentación Swagger (OpenAPI)
+
+**FastAPI** genera automáticamente la documentación interactiva de la API siguiendo el estándar **OpenAPI 3.1**, con soporte completo para probar endpoints desde el navegador.
+
+---
+
+### Rutas disponibles
+
+- **Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc (documentación alternativa):** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Esquema JSON (OpenAPI Spec):** [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
+
+---
+
+### Esquema general
+
+| Método | Ruta | Descripción |
+|---------|------|-------------|
+| `GET` | `/health` | Verifica el estado del servicio. |
+| `GET` | `/models` | Lista los modelos disponibles (nombre, versión más reciente y versiones registradas). |
+| `POST` | `/predict` | Realiza una predicción con el modelo seleccionado. |
+
+---
+
+### Swagger UI
+
+Al abrir [http://localhost:8000/docs](http://localhost:8000/docs), se verá una estructura donde cada endpoint incluye:
+- **Descripción y parámetros esperados.**
+- **Ejemplo de request y response.**
+- **Botón “Try it out”** para probar directamente la API desde el navegador.
