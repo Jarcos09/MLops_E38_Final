@@ -5,41 +5,108 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from loguru import logger
 import pandas as pd
 import numpy as np
-import pandas as pd
 
 
 class DriftDetection:
-    def __init__(self, X_path: Path, y_path: Path, synthetic_data_path: Path, config: dict):
+    def __init__(self, X_path: Path, y_path: Path, synthetic_data_source, model: any):
+        """
+        synthetic_data_source puede ser:
+            - Path a un CSV
+            - DataFrame en memoria (ej. X_new del endpoint predict)
+        """
         self.Xtrain_path = X_path
         self.ytrain_path = y_path
-        self.synthetic_data_path=synthetic_data_path
-        self.config = config
+        self.synthetic_data_source = synthetic_data_source
+        self.model = model
 
-
+    # ---------------------------------------------------------
+    # CARGA DE DATASETS
+    # ---------------------------------------------------------
     def load_dataset(self):
         logger.info(f"Cargando dataset desde: {self.Xtrain_path} y {self.ytrain_path}")
+
+        # --- Cargar ---
         self.X_train = pd.read_csv(self.Xtrain_path)
         self.y_train = pd.read_csv(self.ytrain_path)
-        self.X_drift = pd.read_csv(self.synthetic_data_path)
-        self.X_drift = self.X_drift.loc[self.y_train.index]
-        
 
+        # Eliminar columnas Unnamed
+        self.y_train = self.y_train.loc[:, ~self.y_train.columns.str.contains("Unnamed")]
+        if self.y_train.shape[1] == 1:
+            self.y_train = self.y_train.iloc[:, 0]
+
+        # ==========================================
+        # CARGAR SINTÉTICO: puede ser archivo o DataFrame
+        # ==========================================
+        if isinstance(self.synthetic_data_source, pd.DataFrame):
+            logger.info("Usando synthetic_data_source como DataFrame en memoria.")
+            self.X_drift = self.synthetic_data_source.copy()
+        elif isinstance(self.synthetic_data_source, (str, Path)):
+            logger.info(f"Cargando synthetic_data desde archivo: {self.synthetic_data_source}")
+            self.X_drift = pd.read_csv(self.synthetic_data_source)
+        else:
+            raise ValueError("synthetic_data_source debe ser Path o DataFrame.")
+
+        # --- Validar datasets cargados ---
+        if len(self.X_train) == 0:
+            raise ValueError("X_train está vacío.")
+        if len(self.y_train) == 0:
+            raise ValueError("y_train está vacío.")
+        if len(self.X_drift) == 0:
+            raise ValueError("X_drift está vacío.")
+
+        # --- Determinar tamaño común mínimo ---
+        min_len = min(len(self.X_train), len(self.y_train), len(self.X_drift))
+
+        logger.info(f"Recortando datasets al tamaño mínimo común: {min_len}")
+
+        # --- Recortes ---
+        self.X_train = self.X_train.iloc[:min_len].reset_index(drop=True)
+        if isinstance(self.y_train, pd.Series):
+            self.y_train = self.y_train.iloc[:min_len].reset_index(drop=True)
+        else:
+            self.y_train = self.y_train.iloc[:min_len].reset_index(drop=True)
+
+        self.X_drift = self.X_drift.iloc[:min_len].reset_index(drop=True)
+
+        # --- y_train_for_drift mismo tamaño ---
+        self.y_train_for_drift = self.y_train.copy()
+
+        # --- Validación de columnas ---
+        missing_cols = [c for c in self.X_train.columns if c not in self.X_drift.columns]
+        extra_cols = [c for c in self.X_drift.columns if c not in self.X_train.columns]
+
+        if missing_cols:
+            raise ValueError(f"X_drift NO tiene columnas necesarias: {missing_cols}")
+
+        if extra_cols:
+            logger.warning(f"X_drift tiene columnas extras que serán eliminadas: {extra_cols}")
+            self.X_drift = self.X_drift[self.X_train.columns]
+
+        # Reordenar columnas
+        self.X_drift = self.X_drift[self.X_train.columns]
+
+        logger.success(f"Dataset cargado y recortado correctamente (filas={min_len}).")
+
+        print("X_train:", self.X_train.shape)
+        print("y_train:", self.y_train.shape)
+        print("X_drift:", self.X_drift.shape)
+        print("y_train_for_drift:", self.y_train_for_drift.shape)
+
+
+    # ---------------------------------------------------------
+    # EJECUCIÓN PRINCIPAL
+    # ---------------------------------------------------------
     def run(self):
         self.load_dataset()
         self._classify_columns_and_select_drift()
 
-    # ---------- Clasificación y selección de columnas ----------
+    # ---------------------------------------------------------
+    # EVALUACIÓN Y PRUEBAS DE DRIFT
+    # ---------------------------------------------------------
     def _classify_columns_and_select_drift(self):
-        logger.info(f"Cargando modelo desde: {self.config["use_model"]}")
-
-        if self.config["use_model"] == "rf":
-            model = self.config["rf_model"]
-        elif self.config["use_model"] == "xgb":
-            model = self.config["xgb_model"]
-
         # === Evaluación sobre conjunto BASE (X_test / y_test) ===
         logger.info("Evaluando modelo")
-        y_pred_base = model.predict(self.X_train)
+        y_pred_base = self.model.predict(self.X_train)
         y_true_base = self.y_train.values if isinstance(self.y_train, pd.DataFrame) else self.y_train
 
         mse_base = mean_squared_error(y_true_base, y_pred_base)
@@ -47,11 +114,12 @@ class DriftDetection:
         r2_base = r2_score(y_true_base, y_pred_base)
 
         # === Evaluación sobre conjunto DRIFT (X_drift / y_drift) ===
-        y_pred_drift = model.predict(self.X_drift)
+        y_pred_drift = self.model.predict(self.X_drift)
+        y_true_drift = self.y_train_for_drift.values
 
-        mse_drift = mean_squared_error(y_true_base, y_pred_drift)
-        mae_drift = mean_absolute_error(y_true_base, y_pred_drift)
-        r2_drift = r2_score(y_true_base, y_pred_drift)
+        mse_drift = mean_squared_error(y_true_drift, y_pred_drift)
+        mae_drift = mean_absolute_error(y_true_drift, y_pred_drift)
+        r2_drift = r2_score(y_true_drift, y_pred_drift)
 
         # === Comparación de métricas ===
         metrics_df = pd.DataFrame({
@@ -234,7 +302,6 @@ class DriftDetection:
 
         print(f"[INFO] Columnas con drift significativo: {len(drift_hits)}")
 
-        ### 4.4 Unificar los Resultados (métricas + pruebas estadísticas)
+        print(drift_report)
 
-        
-
+        return drift_report

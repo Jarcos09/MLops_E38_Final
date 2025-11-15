@@ -57,30 +57,30 @@ def main():
         xgb_model_uri = model_path_last_rev / conf.training.xgb_model_file
 
     try:
-        cfg = {
+        config = {
             "mlflow_tracking_uri": conf.training.mlflow_tracking_uri,
             "rf_model_file_path": rf_model_uri,
             "xgb_model_file_path": xgb_model_uri,
             "use_model": conf.prediction.use_model,
         }
 
-        predictor = ModelPredictor(config=cfg)
+        predictor = ModelPredictor(config=config)
         
         rf_model = predictor.load_model(model_file=rf_model_uri)  
         xgb_model = predictor.load_model(model_file=xgb_model_uri)  
     except Exception:
         raise RuntimeError("No se pudo inicializar el ModelPredictor.")
-    
 
+    if conf.prediction.use_model == "rf":
+        model = rf_model
+    else:
+        model = xgb_model
+    
     drift = DriftDetection(
         X_path=conf.data.processed_data.x_train_file,    
         y_path=conf.data.processed_data.y_train_file,
-        synthetic_data_path=conf.data.synthetic_data_file,
-        config={                                        # Configuración de preprocesamiento
-            "rf_model": rf_model,
-            "xgb_model": xgb_model,
-            "use_model": conf.prediction.use_model
-        },
+        synthetic_data_source=conf.data.synthetic_data_file,
+        model = model
     )
     
     drift.run()  # Carga, limpia, convierte, imputa y guarda el dataset
