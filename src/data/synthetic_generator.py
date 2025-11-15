@@ -136,6 +136,17 @@ class SyntheticDataGenerator:
                 X_drift[c] = s
 
         logger.success("Drift aplicado exitosamente.")
+        summary_cols = binary_cols[:3] + lowcard_cols[:3] + cont_cols[:3]
+
+        out = []
+        for c in summary_cols:
+            a = df[c].dropna().astype(float)
+            b = X_drift[c].dropna().astype(float)
+            if len(a)>1 and len(b)>1:
+                out.append({"col": c, "mean_diff": float(b.mean()-a.mean()), "std_ratio": float(b.std(ddof=0)/max(1e-12,a.std(ddof=0)))})
+        logger.info("Chequeo rápido de magnitud de drift en una muestra de columnas:")
+        print(out)
+    
         return X_drift
 
 

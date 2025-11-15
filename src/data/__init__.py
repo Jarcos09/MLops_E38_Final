@@ -1,1 +1,1 @@
-from . import cleaning, dataset, features
+from . import cleaning, dataset, features, synthetic

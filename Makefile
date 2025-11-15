@@ -177,6 +177,11 @@ predict:
 	@$(PYTHON_INTERPRETER) -m src.modeling.predict
 	make mlflow-stop
 
+.PHONY: drift
+drift: 
+	make synthetic
+	@$(PYTHON_INTERPRETER) -m src.modeling.drift
+
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################

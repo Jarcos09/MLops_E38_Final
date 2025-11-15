@@ -50,6 +50,8 @@ class ModelPredictor:
             logger.exception(f"Error cargando modelo desde {model_file}: {e}")
             raise
 
+        return self.model
+
     # Generación de predicciones sobre nuevas muestras
     def predict(self, X_new):
         """
