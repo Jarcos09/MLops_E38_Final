@@ -26,11 +26,11 @@ app = FastAPI(
     version=str(conf.metadata.version),
     contact={
         "name": conf.metadata.author,
-        "url": "https://github.com/Jarcos09/MLops_E38_Final"
+        "url": conf.metadata.url,
     },
     license_info={
-        "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT",
+        "name": conf.metadata.license_name,
+        "url": conf.metadata.license_url,
     },
 )
 

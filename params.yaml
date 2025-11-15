@@ -88,3 +88,6 @@ metadata:
   author: "Equipo 38"
   project: "MLops_E38_F2"
   version: "1.0.0"
+  url: "https://github.com/Jarcos09/MLops_E38_Final"
+  license_name: "MIT License"
+  license_url: "https://opensource.org/licenses/MIT"
