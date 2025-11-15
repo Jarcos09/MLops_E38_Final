@@ -36,13 +36,12 @@ app = FastAPI(
 
 # Cargar predictor globalmente para reutilizar la instancia entre peticiones
 predictor = None
-model = None
 
 @app.on_event("startup")
 def startup_event():
     """Inicializa y carga el modelo en memoria al iniciar la app."""
     global predictor
-    global model
+    
     try:
         model_path_last_rev = paths.get_latest_version_path(conf.training.rf_model_path)
         rf_model_uri = model_path_last_rev / conf.training.rf_model_file
@@ -133,6 +132,8 @@ def predict(request: PredictionRequest):
     Recibe un JSON con `instances: [{feature: value, ...}, ...]` y devuelve
     una lista de objetos con las predicciones.
     """
+    model = None
+
     if predictor is None:
         raise HTTPException(status_code=500, detail="Modelo no cargado")
 
