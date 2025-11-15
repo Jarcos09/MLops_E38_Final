@@ -16,25 +16,57 @@ class SyntheticDataGenerator:
         logger.debug(f"Output path: {self.output_path}")
 
         self.gmm = None
-
+        self.feature_names = None
 
     def load_gmm(self):
+        """
+        Carga el archivo GMM que contiene:
+        - model: GaussianMixture
+        - feature_names: columnas utilizadas en el entrenamiento
+        """
         logger.info("Cargando modelo GMM...")
-        self.gmm = joblib.load(self.gmm_file)
-        logger.success("GMM cargado correctamente.")
+
+        if not self.gmm_file:
+            raise ValueError("La ruta del archivo GMM no está especificada.")
+
+        payload = joblib.load(self.gmm_file)
+
+        if "model" not in payload:
+            raise KeyError("El archivo GMM no contiene la clave 'model'.")
+
+        self.gmm = payload["model"]
+        self.feature_names = payload.get("feature_names")
+
+        logger.success(f"GMM cargado correctamente desde: {self.gmm_file}")
 
 
     def generate(self) -> pd.DataFrame:
+        """
+        Genera datos sintéticos utilizando el modelo GMM cargado.
+        """
         if self.gmm is None:
             raise ValueError("Debes cargar el GMM antes de generar datos.")
 
         logger.info(f"Generando {self.n_samples} datos sintéticos...")
 
+        # GaussianMixture.sample() retorna (X, y)
         X, _ = self.gmm.sample(self.n_samples)
 
-        df = pd.DataFrame(X)
-        logger.success(f"{len(df)} filas generadas.")
+        # Crear DataFrame con nombres de columnas si están disponibles
+        if (
+            self.feature_names is not None
+            and isinstance(self.feature_names, (list, tuple, np.ndarray))
+            and len(self.feature_names) == X.shape[1]
+        ):
+            logger.debug(f"feature_names type: {type(self.feature_names)}")
+            df = pd.DataFrame(X, columns=list(self.feature_names))
+        else:
+            df = pd.DataFrame(X)
+            logger.warning(
+                "feature_names inválidos o no coinciden con las dimensiones; usando columnas numéricas."
+            )
 
+        logger.success(f"{len(df)} filas generadas exitosamente.")
         return df
 
     def save(self, df: pd.DataFrame):

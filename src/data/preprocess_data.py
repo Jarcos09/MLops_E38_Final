@@ -128,12 +128,7 @@ class DataPreprocessor:
     
     def generate_gmm(self, X_train_proc, dest: Path | str | None = None):
         """
-        Genera un modelo de mezcla gaussiana (GMM) usando los datos de entrenamiento
-        procesados y lo guarda en disco.
-
-        Parámetros
-        X_train_proc : np.ndarray
-            Matriz de variables predictoras transformadas del conjunto de entrenamiento.
+        Genera un modelo GMM y lo guarda junto con feature_names.
         """
         n_components = self.config["gmm_n_components"]
         random_state = self.config["gmm_random_state"]
@@ -142,11 +137,16 @@ class DataPreprocessor:
         gmm = GaussianMixture(n_components=n_components, random_state=random_state)
         gmm.fit(X_train_proc)
 
+        payload = {
+            "model": gmm,
+            "feature_names": self.feature_names
+        }
+
         if gmm_file:
-            joblib.dump(gmm, gmm_file)
-            logger.info(f"Modelo GMM guardado en: {gmm_file}")
+            joblib.dump(payload, gmm_file)
+            logger.info(f"GMM guardado en: {gmm_file}")
         else:
-            logger.warning("No se proporcionó ruta para guardar el modelo GMM; no se guardará.")
+            logger.warning("No se proporcionó ruta para guardar el modelo GMM.")
 
     def save_outputs(self, X_train_proc, X_test_proc, y_train, y_test, train_idx, test_idx):
         """
