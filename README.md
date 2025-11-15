@@ -155,6 +155,11 @@ Realizar FE:
 make FE
 ```
 
+Crear datos sintéticos:
+```bash
+make synthetic
+```
+
 Ejecuta (data → clean_data → FE):
 ```bash
 make prepare

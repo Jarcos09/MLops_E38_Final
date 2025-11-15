@@ -150,6 +150,11 @@ clean_data:
 FE:
 	$(PYTHON_INTERPRETER) -m src.data.features
 
+## Make synthetic
+.PHONY: synthetic
+synthetic:
+	$(PYTHON_INTERPRETER) -m src.data.synthetic
+
 ## Make train
 .PHONY: train
 train:
