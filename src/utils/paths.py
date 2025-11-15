@@ -88,7 +88,7 @@ def build_model_local_path(model_name: str, version: Optional[str | int], model_
     if version is None:
         raise ValueError("version is required to build a local model path")
 
-    return f"models/{model_name}/{version}/{model_file}"
+    return f"{model_name}/{version}/{model_file}"
 
 
 def get_next_version_path(model_dir_path: str | Path) -> Path:

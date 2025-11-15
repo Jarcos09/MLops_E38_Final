@@ -37,11 +37,13 @@ app = FastAPI(
 
 # Cargar predictor globalmente para reutilizar la instancia entre peticiones
 predictor = None
+model = None
 
 @app.on_event("startup")
 def startup_event():
     """Inicializa y carga el modelo en memoria al iniciar la app."""
     global predictor
+    global model
     try:
         cfg = {
             "mlflow_tracking_uri": conf.training.mlflow_tracking_uri,

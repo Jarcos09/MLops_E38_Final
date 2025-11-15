@@ -16,7 +16,6 @@ ENV/
 *.sqlite
 
 # Datos, notebooks y documentación pesada (no necesarios en runtime)
-data/
 notebooks/
 docs/
 reports/

@@ -36,11 +36,13 @@ app = FastAPI(
 
 # Cargar predictor globalmente para reutilizar la instancia entre peticiones
 predictor = None
+model = None
 
 @app.on_event("startup")
 def startup_event():
     """Inicializa y carga el modelo en memoria al iniciar la app."""
     global predictor
+    global model
     try:
         model_path_last_rev = paths.get_latest_version_path(conf.training.rf_model_path)
         rf_model_uri = model_path_last_rev / conf.training.rf_model_file
@@ -155,7 +157,7 @@ def predict(request: PredictionRequest):
                     model_file = conf.training.rf_model_file if model_type == "rf" else conf.training.xgb_model_file
                     model_file_path = paths.build_model_local_path(model_path, desired_version, model_file)
                     logger.info(f"Intentando cargar modelo local desde: {model_file_path}")
-                    predictor.load_model(model_file=model_file_path)
+                    model = predictor.load_model(model_file=model_file_path)
             # En caso de error, fallback automático
             except Exception as e:
                 logger.exception("No se pudo cargar el modelo correctamente.")
