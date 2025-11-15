@@ -250,6 +250,11 @@ Baja (pull) la imagen publicada en Docker Hub:
 make docker-pull
 ```
 
+Simulación de Data Drift 
+```bash
+make drift
+```
+
 --------
 --------
 
