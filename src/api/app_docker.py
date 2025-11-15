@@ -11,6 +11,7 @@ from src.data.clean_dataset import DatasetCleaner
 from src.modeling.predict_model import ModelPredictor
 from src.utils import paths
 from .schemas import PredictionRequest, PredictionResponse
+from src.modeling.drift_detection import DriftDetection
 
 
 app = FastAPI(
@@ -148,7 +149,7 @@ def predict(request: PredictionRequest):
             try:
                 if desired_version == conf.prediction.use_version:
                     logger.info("Intentando con la versión más reciente disponible (fallback local).")
-                    predictor.load_model(model_type=model_type)
+                    model = predictor.load_model(model_type=model_type)
                 else:
                     model_path = conf.training.rf_model_path if model_type == "rf" else conf.training.xgb_model_path
                     model_file = conf.training.rf_model_file if model_type == "rf" else conf.training.xgb_model_file
@@ -229,7 +230,48 @@ def predict(request: PredictionRequest):
         preds_df = predictor.predict(X_new)
         result = preds_df.to_dict(orient="records")
 
-        return {"predictions": result}
+        # ============================================================
+        #                 EJECUTAR DETECCIÓN DE DRIFT              
+        # ============================================================
+        try:
+            if model is not None:
+                drift_detector = DriftDetection(
+                    X_path=conf.data.processed_data.x_train_file,
+                    y_path=conf.data.processed_data.y_train_file,
+                    synthetic_data_source=X_new,
+                    model=model
+                )
+
+                drift_report = drift_detector.run()
+
+                # --- Ajuste correcto ---
+                if drift_report is not None and "severity" in drift_report.columns:
+                    
+                    drift_cols = drift_report[
+                        drift_report["severity"].isin(["moderate", "severe"])
+                    ]["feature"].tolist()
+
+                    drift_info = {
+                        "detected": len(drift_cols) > 0,
+                        "features": drift_cols,
+                    }
+                else:
+                    drift_info = {
+                        "detected": False,
+                        "features": [],
+                    }
+
+        except Exception as e:
+            logger.error(f"Drift detection empty at /predict: {e}")
+            drift_info = {
+                "detected": False,
+                "features": [],
+            }
+
+        return {
+            "predictions": result,
+            "data_drift": drift_info
+        }
     except Exception as exc:
         logger.exception("Error al generar la predicción")
         raise HTTPException(status_code=500, detail=str(exc))
