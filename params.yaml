@@ -28,11 +28,11 @@ dvc:
   aws_region: "${oc.env:AWS_REGION, ''}"
   aws_profile: "${oc.env:AWS_PROFILE, ''}"
 
-cleaning:
-  skew_threshold: 0.5
-
 download:
   dataset_id: "1OuJHPpn2Wv5EhlL1J98HWYyPJM-iL8Ds"
+
+cleaning:
+  skew_threshold: 0.5
 
 preprocessing:
   target_columns: ["Y1", "Y2"]
@@ -46,6 +46,9 @@ preprocessing:
     sparse_output: false
     handle_unknown: "ignore"
   preprocessor_file: "${paths.models}/preprocessor.pkl"
+  gmm_n_components: 8
+  gmm_random_state: 42
+  gmm_file: "${paths.models}/gmm.pkl"
 
 training:
   mlflow_tracking_uri: "${oc.env:MLFLOW_TRACKING_URI, file:./mlruns}"

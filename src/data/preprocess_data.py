@@ -9,6 +9,7 @@ from sklearn.preprocessing import OneHotEncoder, PowerTransformer
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.mixture import GaussianMixture
 
 warnings.filterwarnings('ignore')
 
@@ -124,6 +125,28 @@ class DataPreprocessor:
         self.feature_names = self.pipeline.named_steps['preprocessor'].get_feature_names_out()  # Nombres de columnas
 
         return X_train_proc, X_test_proc, y_train, y_test, X_train.index, X_test.index
+    
+    def generate_gmm(self, X_train_proc, dest: Path | str | None = None):
+        """
+        Genera un modelo de mezcla gaussiana (GMM) usando los datos de entrenamiento
+        procesados y lo guarda en disco.
+
+        Parámetros
+        X_train_proc : np.ndarray
+            Matriz de variables predictoras transformadas del conjunto de entrenamiento.
+        """
+        n_components = self.config["gmm_n_components"]
+        random_state = self.config["gmm_random_state"]
+        gmm_file = dest or self.config["gmm_file"]
+
+        gmm = GaussianMixture(n_components=n_components, random_state=random_state)
+        gmm.fit(X_train_proc)
+
+        if gmm_file:
+            joblib.dump(gmm, gmm_file)
+            logger.info(f"Modelo GMM guardado en: {gmm_file}")
+        else:
+            logger.warning("No se proporcionó ruta para guardar el modelo GMM; no se guardará.")
 
     def save_outputs(self, X_train_proc, X_test_proc, y_train, y_test, train_idx, test_idx):
         """
@@ -182,6 +205,7 @@ class DataPreprocessor:
         self.separate_variables()                                                                       # Separación X e y
         self.encode_features()                                                                          # Configuración de codificación
         X_train_proc, X_test_proc, y_train, y_test, train_idx, test_idx = self.split_and_transform()    # División y transformación
+        self.generate_gmm(X_train_proc)                                                                 # Generación y guardado de GMM
         self.save_outputs(X_train_proc, X_test_proc, y_train, y_test, train_idx, test_idx)
         
         # Persistir el pipeline de preprocesamiento (opcional pero recomendado)

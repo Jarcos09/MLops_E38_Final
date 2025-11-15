@@ -34,7 +34,10 @@ def preprocess():
             "test_size": conf.preprocessing.test_size,                          # Tamaño del conjunto de prueba
             "random_state": conf.preprocessing.random_state,                    # Semilla para reproducibilidad
             "target_transform": conf.preprocessing.target_transform,            # Transformaciones para columnas objetivo
-            "preprocessor_file": conf.preprocessing.preprocessor_file           # Archivo para guardar el preprocesador serializado
+            "preprocessor_file": conf.preprocessing.preprocessor_file,          # Archivo para guardar el preprocesador serializado
+            "gmm_n_components": conf.preprocessing.gmm_n_components,            # Número de componentes para GMM
+            "gmm_random_state": conf.preprocessing.gmm_random_state,            # Semilla para GMM
+            "gmm_file": conf.preprocessing.gmm_file                             # Archivo para guardar el modelo GMM
         }
     )
 

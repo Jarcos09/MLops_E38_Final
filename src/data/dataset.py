@@ -2,12 +2,16 @@
 import typer
 from src.data.download_dataset import DatasetDownloader
 from src.config.config import conf
+from src.utils import paths
 
 app = typer.Typer()
 
 # Comando principal de la aplicación para descarga de datasets
 @app.command()
 def download():
+    # Asegura que exista la ruta de salida intermedia
+    paths.ensure_path(conf.paths.raw)
+
     # Inicialización del objeto DatasetDownloader con ID y ruta de salida
     downloader = DatasetDownloader(
         dataset_id=conf.download.dataset_id,    # ID del dataset a descargar
