@@ -32,16 +32,16 @@ stages:
       - data/processed/
       - params.yaml
     outs:
-      - models/rf_regressor.pkl
-      - models/xgb_multioutput.pkl
+      - models/rf_regressor
+      - models/xgb_multioutput
   
   predict:
     cmd: python -m src.modeling.predict
     deps:
       - src/modeling/predict.py
       - data/processed/
-      - models/rf_regressor.pkl
-      - models/xgb_multioutput.pkl
+      - models/rf_regressor
+      - models/xgb_multioutput
       - params.yaml
     outs:
       - data/prediction/predictions.csv
