@@ -76,7 +76,7 @@ Fase 3 Avance de Proyecto, Gestion del Proyecto de Machine Learning
 --------
 --------
 
-# Fase 2 | Avance de Proyecto
+# Fase Final | Avance de Proyecto
 # Equipo 38
 
 En esta actividad se continuará con el desarrollo del proyecto, dando seguimiento a los avances realizados en la Fase 1. Se mantendrá la propuesta de valor, el análisis elaborado con el ML Canvas, así como los datos, modelos y experimentos previamente desarrollados. El objetivo ahora es estructurar el proyecto de Machine Learning de forma profesional, aplicando buenas prácticas como la refactorización del código, el control de versiones, el seguimiento de experimentos, el registro de métricas y modelos, y el aseguramiento de la reproducibilidad.
