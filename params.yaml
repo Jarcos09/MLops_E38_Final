@@ -55,6 +55,10 @@ preprocessing:
 synthetic:
   n_samples: 5000
   apply_drift: true
+  gamma_reweight: 0.08
+  lowcard_uniform_mix: 0.15
+  mean_shift_std: 0.20
+  var_scale: 1.08
 
 training:
   mlflow_tracking_uri: "${oc.env:MLFLOW_TRACKING_URI, file:./mlruns}"

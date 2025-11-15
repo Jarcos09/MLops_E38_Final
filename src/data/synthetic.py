@@ -14,8 +14,15 @@ def preprocess():
     paths.ensure_path(conf.paths.models)
     
     generator = SyntheticDataGenerator(
-        gmm_file=conf.preprocessing.gmm_file,
-        n_samples=conf.synthetic.n_samples,
+        config={                                                        # Configuración de preprocesamiento
+            "gmm_file": conf.preprocessing.gmm_file,                    # Columnas objetivo
+            "n_samples": conf.synthetic.n_samples,                      # Columnas de características
+            "apply_drift": conf.synthetic.apply_drift,                  # Permitir columnas faltantes
+            "gamma_reweight": conf.synthetic.gamma_reweight, 
+            "lowcard_uniform_mix": conf.synthetic.lowcard_uniform_mix,
+            "mean_shift_std": conf.synthetic.mean_shift_std,
+            "var_scale": conf.synthetic.var_scale
+        },
         output_path=conf.data.synthetic_data_file
     )
 
