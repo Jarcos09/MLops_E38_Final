@@ -10,7 +10,7 @@ from src.data.clean_dataset import DatasetCleaner
 
 
 # ------------------------ Cargar datos ------------------------ #
-
+@pytest.mark.unit
 def test_init_stores_attributes():
     input_path = Path("data/raw/raw.csv")
     output_path = Path("data/processed/clean.csv")
@@ -25,7 +25,7 @@ def test_init_stores_attributes():
     # Bandera
     assert cleaner._from_dataframe is False
 
-
+@pytest.mark.unit
 def test_load_dataset_from_dataframe():
     df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     cleaner = DatasetCleaner(input_path=df,
@@ -38,7 +38,7 @@ def test_load_dataset_from_dataframe():
     pd.testing.assert_frame_equal(cleaner.df, df)
     assert cleaner._from_dataframe is True
 
-
+@pytest.mark.unit
 def test_load_dataset_from_path(tmp_path: Path):
     original_df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
     csv_path = tmp_path / "input.csv"
@@ -52,7 +52,7 @@ def test_load_dataset_from_path(tmp_path: Path):
 
     pd.testing.assert_frame_equal(cleaner.df, original_df)
 
-
+@pytest.mark.unit
 def test_load_dataset_raises_when_input_none():
     cleaner = DatasetCleaner(input_path=None,
                              output_path=None,
@@ -63,7 +63,7 @@ def test_load_dataset_raises_when_input_none():
 
 
 # ------------------------ remplazar strings vacios ------------------------ #
-
+@pytest.mark.unit
 def test_replace_empty_strings_converts_to_nan():
     df = pd.DataFrame({
         "a": ["", "   ", "x", None],
@@ -91,7 +91,7 @@ def test_replace_empty_strings_converts_to_nan():
 
 
 # ------------------------ convertir a numerico ------------------------ #
-
+@pytest.mark.unit
 def test_convert_to_numeric_casts_and_coerces():
     df = pd.DataFrame({
         "a": ["1", "2", "x"],      # 'x' -> NaN
@@ -114,7 +114,7 @@ def test_convert_to_numeric_casts_and_coerces():
 
 
 # ------------------------ Imputar NaNs ------------------------ #
-
+@pytest.mark.unit
 def test_impute_missing_values_uses_mean_when_skew_small(monkeypatch):
     # mean != median para distinguir
     df = pd.DataFrame({"col": [1.0, 1.0, 100.0, np.nan]})
@@ -136,7 +136,7 @@ def test_impute_missing_values_uses_mean_when_skew_small(monkeypatch):
     assert cleaner.df["col"].isna().sum() == 0
     assert cleaner.df["col"].iloc[3] == pytest.approx(expected_mean)
 
-
+@pytest.mark.unit
 def test_impute_missing_values_uses_median_when_skew_large(monkeypatch):
     df = pd.DataFrame({"col": [1.0, 1.0, 100.0, np.nan]})
     cleaner = DatasetCleaner(input_path=None,
@@ -159,7 +159,7 @@ def test_impute_missing_values_uses_median_when_skew_large(monkeypatch):
 
 
 # ------------------------ Guardar dataset limpio ------------------------ #
-
+@pytest.mark.unit
 def test_save_cleaned_dataset_returns_df_without_writing_when_output_none(tmp_path: Path):
     df = pd.DataFrame({"a": [1, 2, 3]})
 
@@ -173,7 +173,7 @@ def test_save_cleaned_dataset_returns_df_without_writing_when_output_none(tmp_pa
     assert result is cleaner.df  # mismo objeto
     # Si no hay archivo, no se checa
 
-
+@pytest.mark.unit
 def test_save_cleaned_dataset_writes_csv_to_disk(tmp_path: Path):
     df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     output_path = tmp_path / "clean.csv"
@@ -193,7 +193,7 @@ def test_save_cleaned_dataset_writes_csv_to_disk(tmp_path: Path):
 
 
 # ------------------------ run() end-to-end ------------------------ #
-
+@pytest.mark.integration
 def test_run_with_dataframe_in_memory():
     # a tiene numerico + string vacio
     # b tiene numerico + whitespace y None

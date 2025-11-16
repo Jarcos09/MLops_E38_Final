@@ -165,7 +165,7 @@ def test_apply_drift_changes_values(base_config):
 #           TEST run() COMPLETO CON MOCKS
 # ============================================================
 
-@pytest.mark.unit
+@pytest.mark.integration
 @patch("src.data.synthetic_generator.SyntheticDataGenerator.save")
 @patch("src.data.synthetic_generator.SyntheticDataGenerator.generate")
 @patch("src.data.synthetic_generator.SyntheticDataGenerator.load_gmm")

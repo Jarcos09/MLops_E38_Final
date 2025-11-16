@@ -6,7 +6,7 @@ import pytest
 
 from src.data.download_dataset import DatasetDownloader
 
-
+@pytest.mark.unit
 @pytest.fixture
 def sample_downloader():
     return DatasetDownloader(
@@ -14,7 +14,7 @@ def sample_downloader():
         output_path="data/raw/dataset.csv"
     )
 
-
+@pytest.mark.unit
 def test_init_sets_attributes():
     downloader = DatasetDownloader(
         dataset_id="DATASET_ID",
@@ -24,14 +24,14 @@ def test_init_sets_attributes():
     assert downloader.dataset_id == "DATASET_ID"
     assert downloader.output_path == "data/raw/file.csv"
 
-
+@pytest.mark.unit
 @patch("src.data.download_dataset.paths.ensure_path")
 def test_prepare_directory_calls_ensure_path(mock_ensure_path, sample_downloader):
     sample_downloader.prepare_directory()
 
     mock_ensure_path.assert_called_once_with("data/raw/dataset.csv")
 
-
+@pytest.mark.unit
 @patch("src.data.download_dataset.gdown.download")
 def test_download_calls_gdown_with_correct_arguments(mock_gdown_download, sample_downloader):
     sample_downloader.download()
@@ -42,7 +42,7 @@ def test_download_calls_gdown_with_correct_arguments(mock_gdown_download, sample
         quiet=True,
     )
 
-
+@pytest.mark.unit
 @patch("src.data.download_dataset.gdown.download")
 @patch("src.data.download_dataset.paths.ensure_path")
 def test_run_calls_prepare_directory_and_download(

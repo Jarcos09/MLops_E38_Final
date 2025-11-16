@@ -127,7 +127,7 @@ def test_log_model_serializes_and_logs(mock_paths, mock_mlflow, tiny_data, tmp_p
 
 
 # --------------- train_random_forest: integración ligera -------------- #
-@pytest.mark.unit
+@pytest.mark.integration
 @patch("src.modeling.train_model.mlflow")
 @patch("src.modeling.train_model.paths")
 def test_train_random_forest_returns_best_model_and_metrics(
