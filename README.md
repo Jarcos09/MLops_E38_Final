@@ -232,22 +232,22 @@ make dvc_status
 
 Construye la imagen Docker localmente:
 ```bash
-make docker-build
+make docker_build
 ```
 
 Ejecuta el contenedor localmente en segundo plano (puerto 8000):
 ```bash
-make docker-run
+make docker_run
 ```
 
 Detiene el contenedor si está corriendo:
 ```bash
-make docker-stop
+make docker_stop
 ```
 
 Baja (pull) la imagen publicada en Docker Hub:
 ```bash
-make docker-pull
+make docker_pull
 ```
 
 Simulación de Data Drift 
@@ -476,9 +476,10 @@ curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json"
 
 {
     "predictions": [
-        {"prediction": 0.123},
-        {"prediction": 0.456}
-    ]
+        {"target_0": 0.123},
+        {"target_1": 0.456}
+    ],
+    "data_drift": {"detected":false,"features":[]}
 }
 
 ---
