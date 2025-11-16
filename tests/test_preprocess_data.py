@@ -27,7 +27,14 @@ def base_config(tmp_path: Path):
         "random_state": 0,
         "target_transform": "yeo-johnson",
         "preprocessor_file": str(tmp_path / "preprocessor.pkl"),
+
+        #  Claves usadas por generate_gmm()
+        "gmm_n_components": 2,
+        "gmm_random_state": 0,
+        "gmm_file": str(tmp_path / "gmm.json"),
     }
+
+
 
 
 # ---------------------------------------------------------------------
@@ -191,7 +198,7 @@ def test_save_preprocessor_dump_ok(tmp_path: Path):
 # ---------------------------------------------------------------------
 # run (end-to-end con archivos temporales)
 # ---------------------------------------------------------------------
-@pytest.mark.unit
+@pytest.mark.integration
 def test_run_end_to_end(tmp_path: Path, monkeypatch):
     # CSV de entrada
     df = pd.DataFrame(
