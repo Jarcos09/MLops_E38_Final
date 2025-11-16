@@ -77,8 +77,8 @@ def main():
         model = xgb_model
     
     drift = DriftDetection(
-        X_path=conf.data.processed_data.x_train_file,    
-        y_path=conf.data.processed_data.y_train_file,
+        X_path=conf.data.processed_data.x_test_file,    
+        y_path=conf.data.processed_data.y_test_file,
         synthetic_data_source=conf.data.synthetic_data_file,
         model = model
     )
