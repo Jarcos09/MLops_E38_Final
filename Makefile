@@ -280,3 +280,4 @@ docker-stop:
 .PHONY: docker-pull
 docker-pull:
 	docker pull cremercado/ml-service:1.0.0
+	docker tag cremercado/ml-service:1.0.0 ml-service:1.0.0
