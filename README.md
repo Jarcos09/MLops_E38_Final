@@ -594,3 +594,30 @@ Al abrir [http://localhost:8000/docs](http://localhost:8000/docs), se verá una 
 <p align="center">
   <img src="./docs/images/swagger/swagger-docs.png" alt="Swagger UI Screenshot" width="700"/>
 </p>
+
+### 🧪 Testing con PyTest
+
+Este proyecto utiliza pytest para validar el funcionamiento del pipeline.
+Las pruebas están divididas en dos tipos:
+
+Unit tests → @pytest.mark.unit
+Integration tests → @pytest.mark.integration
+
+El siguiente comando corre todas las pruebas:
+
+```bash
+pytest -q
+```
+
+Para correr unicamente pruebas unitarias se puede correr con este comando:
+
+```bash
+pytest -m "unit"
+```
+
+Para unicamente pruebas de integración:
+
+```bash
+pytest -m "integration"
+```
+
