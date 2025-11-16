@@ -1,6 +1,5 @@
 import pytest
 from pydantic import ValidationError
-
 from src.api.schemas import PredictionRequest, PredictionResponse
 
 
@@ -8,8 +7,8 @@ from src.api.schemas import PredictionRequest, PredictionResponse
 #                 TESTS PARA PredictionRequest
 # ============================================================
 
+@pytest.mark.unit
 def test_predictionrequest_valid_payload_minimal():
-    """Debe aceptar un payload mínimo válido."""
     payload = {
         "instances": [{"f1": 1.0, "f2": 2.0}],
     }
@@ -17,13 +16,12 @@ def test_predictionrequest_valid_payload_minimal():
     req = PredictionRequest(**payload)
 
     assert req.instances == [{"f1": 1.0, "f2": 2.0}]
-    # defaults tomados desde conf
     assert req.model_type in {"rf", "xgb"}
     assert isinstance(req.model_version, str)
 
 
+@pytest.mark.unit
 def test_predictionrequest_valid_with_all_fields():
-    """Debe aceptar payload con model_type y model_version explícitos."""
     payload = {
         "instances": [{"f1": 1.0}],
         "model_type": "rf",
@@ -37,8 +35,8 @@ def test_predictionrequest_valid_with_all_fields():
     assert req.instances == [{"f1": 1.0}]
 
 
+@pytest.mark.unit
 def test_predictionrequest_invalid_model_type():
-    """Debe fallar si model_type no es 'rf' o 'xgb'."""
     payload = {
         "instances": [{"f1": 1.0}],
         "model_type": "svm",
@@ -48,8 +46,8 @@ def test_predictionrequest_invalid_model_type():
         PredictionRequest(**payload)
 
 
+@pytest.mark.unit
 def test_predictionrequest_instances_required():
-    """Debe fallar si no se pasan instances."""
     payload = {
         "model_type": "rf",
     }
@@ -58,10 +56,10 @@ def test_predictionrequest_instances_required():
         PredictionRequest(**payload)
 
 
+@pytest.mark.unit
 def test_predictionrequest_instances_must_be_list():
-    """Debe fallar si instances no es lista."""
     payload = {
-        "instances": {"a": 1.0}  # incorrecto, no es lista
+        "instances": {"a": 1.0}  # incorrecto
     }
 
     with pytest.raises(ValidationError):
@@ -72,8 +70,8 @@ def test_predictionrequest_instances_must_be_list():
 #                 TESTS PARA PredictionResponse
 # ============================================================
 
+@pytest.mark.unit
 def test_predictionresponse_valid():
-    """Debe validar una respuesta válida."""
     payload = {
         "predictions": [{"target_0": 1.0, "target_1": 2.0}],
         "data_drift": {"detected": False, "features": []}
@@ -86,19 +84,18 @@ def test_predictionresponse_valid():
     assert res.predictions[0]["target_0"] == 1.0
 
 
+@pytest.mark.unit
 def test_predictionresponse_missing_fields():
-    """Debe fallar si falta algún campo obligatorio."""
     payload = {
         "predictions": [{"t": 1}]
-        # falta data_drift
     }
 
     with pytest.raises(ValidationError):
         PredictionResponse(**payload)
 
 
+@pytest.mark.unit
 def test_predictionresponse_empty_predictions():
-    """Debe permitir listas vacías si el modelo no predijo nada."""
     payload = {
         "predictions": [],
         "data_drift": {"detected": False, "features": []}
