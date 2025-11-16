@@ -14,8 +14,8 @@ class DriftDetection:
             - Path a un CSV
             - DataFrame en memoria (ej. X_new del endpoint predict)
         """
-        self.Xtrain_path = X_path
-        self.ytrain_path = y_path
+        self.X_val_path = X_path
+        self.y_val_path = y_path
         self.synthetic_data_source = synthetic_data_source
         self.model = model
 
@@ -23,16 +23,16 @@ class DriftDetection:
     # CARGA DE DATASETS
     # ---------------------------------------------------------
     def load_dataset(self):
-        logger.info(f"Cargando dataset desde: {self.Xtrain_path} y {self.ytrain_path}")
+        logger.info(f"Cargando dataset desde: {self.X_val_path} y {self.y_val_path}")
 
         # --- Cargar ---
-        self.X_train = pd.read_csv(self.Xtrain_path)
-        self.y_train = pd.read_csv(self.ytrain_path)
+        self.X_val = pd.read_csv(self.X_val_path)
+        self.y_val = pd.read_csv(self.y_val_path)
 
         # Eliminar columnas Unnamed
-        self.y_train = self.y_train.loc[:, ~self.y_train.columns.str.contains("Unnamed")]
-        if self.y_train.shape[1] == 1:
-            self.y_train = self.y_train.iloc[:, 0]
+        self.y_val = self.y_val.loc[:, ~self.y_val.columns.str.contains("Unnamed")]
+        if self.y_val.shape[1] == 1:
+            self.y_val = self.y_val.iloc[:, 0]
 
         # ==========================================
         # CARGAR SINTÉTICO: puede ser archivo o DataFrame
@@ -47,50 +47,50 @@ class DriftDetection:
             raise ValueError("synthetic_data_source debe ser Path o DataFrame.")
 
         # --- Validar datasets cargados ---
-        if len(self.X_train) == 0:
-            raise ValueError("X_train está vacío.")
-        if len(self.y_train) == 0:
-            raise ValueError("y_train está vacío.")
+        if len(self.X_val) == 0:
+            raise ValueError("X_val está vacío.")
+        if len(self.y_val) == 0:
+            raise ValueError("y_val está vacío.")
         if len(self.X_drift) == 0:
             raise ValueError("X_drift está vacío.")
 
         # --- Determinar tamaño común mínimo ---
-        min_len = min(len(self.X_train), len(self.y_train), len(self.X_drift))
+        min_len = min(len(self.X_val), len(self.y_val), len(self.X_drift))
 
         logger.info(f"Recortando datasets al tamaño mínimo común: {min_len}")
 
         # --- Recortes ---
-        self.X_train = self.X_train.iloc[:min_len].reset_index(drop=True)
-        if isinstance(self.y_train, pd.Series):
-            self.y_train = self.y_train.iloc[:min_len].reset_index(drop=True)
+        self.X_val = self.X_val.iloc[:min_len].reset_index(drop=True)
+        if isinstance(self.y_val, pd.Series):
+            self.y_val = self.y_val.iloc[:min_len].reset_index(drop=True)
         else:
-            self.y_train = self.y_train.iloc[:min_len].reset_index(drop=True)
+            self.y_val = self.y_val.iloc[:min_len].reset_index(drop=True)
 
         self.X_drift = self.X_drift.iloc[:min_len].reset_index(drop=True)
 
-        # --- y_train_for_drift mismo tamaño ---
-        self.y_train_for_drift = self.y_train.copy()
+        # --- y_val_for_drift mismo tamaño ---
+        self.y_val_for_drift = self.y_val.copy()
 
         # --- Validación de columnas ---
-        missing_cols = [c for c in self.X_train.columns if c not in self.X_drift.columns]
-        extra_cols = [c for c in self.X_drift.columns if c not in self.X_train.columns]
+        missing_cols = [c for c in self.X_val.columns if c not in self.X_drift.columns]
+        extra_cols = [c for c in self.X_drift.columns if c not in self.X_val.columns]
 
         if missing_cols:
             raise ValueError(f"X_drift NO tiene columnas necesarias: {missing_cols}")
 
         if extra_cols:
             logger.warning(f"X_drift tiene columnas extras que serán eliminadas: {extra_cols}")
-            self.X_drift = self.X_drift[self.X_train.columns]
+            self.X_drift = self.X_drift[self.X_val.columns]
 
         # Reordenar columnas
-        self.X_drift = self.X_drift[self.X_train.columns]
+        self.X_drift = self.X_drift[self.X_val.columns]
 
         logger.success(f"Dataset cargado y recortado correctamente (filas={min_len}).")
 
-        print("X_train:", self.X_train.shape)
-        print("y_train:", self.y_train.shape)
+        print("X_val:", self.X_val.shape)
+        print("y_val:", self.y_val.shape)
         print("X_drift:", self.X_drift.shape)
-        print("y_train_for_drift:", self.y_train_for_drift.shape)
+        print("y_val_for_drift:", self.y_val_for_drift.shape)
 
 
     # ---------------------------------------------------------
@@ -106,8 +106,8 @@ class DriftDetection:
     def _classify_columns_and_select_drift(self):
         # === Evaluación sobre conjunto BASE (X_test / y_test) ===
         logger.info("Evaluando modelo")
-        y_pred_base = self.model.predict(self.X_train)
-        y_true_base = self.y_train.values if isinstance(self.y_train, pd.DataFrame) else self.y_train
+        y_pred_base = self.model.predict(self.X_val)
+        y_true_base = self.y_val.values if isinstance(self.y_val, pd.DataFrame) else self.y_val
 
         mse_base = mean_squared_error(y_true_base, y_pred_base)
         mae_base = mean_absolute_error(y_true_base, y_pred_base)
@@ -115,7 +115,7 @@ class DriftDetection:
 
         # === Evaluación sobre conjunto DRIFT (X_drift / y_drift) ===
         y_pred_drift = self.model.predict(self.X_drift)
-        y_true_drift = self.y_train_for_drift.values
+        y_true_drift = self.y_val_for_drift.values
 
         mse_drift = mean_squared_error(y_true_drift, y_pred_drift)
         mae_drift = mean_absolute_error(y_true_drift, y_pred_drift)
@@ -159,11 +159,11 @@ class DriftDetection:
         USE_BONFERRONI = False  # si True, ajusta ALPHA dividiendo por #tests por tipo. (desactivada por defecto)
 
         # Identificar tipos de columnas
-        num_cols = self.X_train.select_dtypes(include=[np.number]).columns.tolist()
-        cat_cols = self.X_train.select_dtypes(include=["object", "category", "bool"]).columns.tolist()
+        num_cols = self.X_val.select_dtypes(include=[np.number]).columns.tolist()
+        cat_cols = self.X_val.select_dtypes(include=["object", "category", "bool"]).columns.tolist()
 
         # (Por seguridad) Asegurar mismas columnas en ambos datasets
-        common_cols = [c for c in self.X_train.columns if c in self.X_drift.columns]
+        common_cols = [c for c in self.X_val.columns if c in self.X_drift.columns]
         num_cols = [c for c in num_cols if c in common_cols]
         cat_cols = [c for c in cat_cols if c in common_cols]
 
@@ -172,7 +172,7 @@ class DriftDetection:
         # --- Kolmogorov–Smirnov (KS) para numéricas ---
         alpha_num = ALPHA / max(1, len(num_cols)) if USE_BONFERRONI else ALPHA
         for c in num_cols:
-            a = self.X_train[c].dropna().values
+            a = self.X_val[c].dropna().values
             b = self.X_drift[c].dropna().values
             # Condiciones mínimas
             if len(a) < 2 or len(b) < 2:
@@ -188,9 +188,9 @@ class DriftDetection:
                 "p_value": p,
                 "alpha": alpha_num,
                 "drift_detected": (p < alpha_num) if np.isfinite(p) else False,
-                "missing_frac_base": self.X_train[c].isna().mean(),
+                "missing_frac_base": self.X_val[c].isna().mean(),
                 "missing_frac_drift": self.X_drift[c].isna().mean(),
-                "n_unique_base": self.X_train[c].nunique(dropna=True),
+                "n_unique_base": self.X_val[c].nunique(dropna=True),
                 "n_unique_drift": self.X_drift[c].nunique(dropna=True),
             })
 
@@ -198,7 +198,7 @@ class DriftDetection:
         alpha_cat = ALPHA / max(1, len(cat_cols)) if USE_BONFERRONI else ALPHA
         for c in cat_cols:
             # Tablas de frecuencias
-            base_counts = self.X_train[c].astype("category")
+            base_counts = self.X_val[c].astype("category")
             drift_counts = self.X_drift[c].astype("category")
             # Alinear categorías (unión de categorías)
             cats = list(set(base_counts.cat.categories).union(set(drift_counts.cat.categories)))
@@ -223,7 +223,7 @@ class DriftDetection:
                 "p_value": p,
                 "alpha": alpha_cat,
                 "drift_detected": (p < alpha_cat) if np.isfinite(p) else False,
-                "missing_frac_base": self.X_train[c].isna().mean(),
+                "missing_frac_base": self.X_val[c].isna().mean(),
                 "missing_frac_drift": self.X_drift[c].isna().mean(),
                 "n_unique_base": int((contingency[0] > 0).sum()) if np.ndim(contingency)==2 else np.nan,
                 "n_unique_drift": int((contingency[1] > 0).sum()) if np.ndim(contingency)==2 else np.nan,
