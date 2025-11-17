@@ -595,7 +595,10 @@ Al abrir [http://localhost:8000/docs](http://localhost:8000/docs), se verá una 
   <img src="./docs/images/swagger/swagger-docs.png" alt="Swagger UI Screenshot" width="700"/>
 </p>
 
-### 🧪 Testing con PyTest
+--------
+--------
+
+## 🧪 Testing con PyTest
 
 Este proyecto utiliza pytest para validar el funcionamiento del pipeline.
 Las pruebas están divididas en dos tipos:
